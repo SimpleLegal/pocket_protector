@@ -296,7 +296,7 @@ class KeyFile(object):
             domain_name, key_custodian)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['added domain {} with owner {}'.format(
+            log=self._log + ['created domain {} with owner {}'.format(
                 domain_name, key_custodian_name)])
 
     def with_secret(self, domain_name, name, value):
@@ -305,7 +305,7 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].with_secret(name, value)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['added secret {} to {}'.format(name, domain_name)])
+            log=self._log + ['created secret {} in {}'.format(name, domain_name)])
 
     def with_owner(self, domain_name, key_custodian_name, creds):
         '''
@@ -318,13 +318,15 @@ class KeyFile(object):
             new_key_custodian=self._key_custodians[key_custodian_name])
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['{} added key custodian {} to {}'.format(
+            log=self._log + ['{} added owner {} to {}'.format(
                 creds.name, key_custodian_name, domain_name)])
 
     def with_new_key_custodian(self, creds):
         key_custodians = dict(self._key_custodians)
         key_custodians[creds.name] = _KeyCustodian.from_creds(creds)
-        return attr.evolve(self, key_custodians=key_custodians)
+        return attr.evolve(
+            self, key_custodians=key_custodians,
+            log=self._log + ['created key custodian {}'.format(creds.name)])
 
     def decrypt_domain(self, domain_name, creds):
         return self._domains[domain_name].get_decrypted(
