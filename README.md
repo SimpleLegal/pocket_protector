@@ -25,7 +25,7 @@ for prod domains, use AWS / heroku key management to store
 the passphrase
 
 An application / script wants to get its secrets:
-```
+```python
 # at initialization
 secrets = KeyFile.decrypt_domain(domain_name, Creds(name, passphrase))
 # ... later to access a secret
@@ -33,7 +33,7 @@ secrets[secret_name]
 ```
 
 An application / script that wants to add / overwrite a secret:
-```
+```python
 KeyFile.from_file(path).with_secret(
     domain_name, secret_name, value).write()
 ```
@@ -43,6 +43,7 @@ Change management on secrets is intended to follow normal source-code
 management.
 
 File structure:
+```yaml
 [key-domain]:
   meta:
     owners:
@@ -54,6 +55,7 @@ key-custodians:
   [name]:
     public-key: [b64-bytes]
     encrypted-private-key: [b64-bytes]
+```
 
 Threat model
 ------------
