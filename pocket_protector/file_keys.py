@@ -127,7 +127,7 @@ class _KeyCustodian(object):
         return cls(
             name=name,
             public_key=nacl.public.PublicKey(
-                decode(data['public-key'])),
+                _decode(data['public-key'])),
             enc_custodian_private_key=_decode(
                 data['encrypted-private-key']),
         )
@@ -392,7 +392,10 @@ class KeyFile(object):
         key_custodians = dict(self._key_custodians)
         key_custodians[creds.name] = key_custodian.set_passphrase(
             creds, new_passphrase)
-        return attr.evolve(self, key_custodians=key_custodians)
+        return attr.evolve(
+            self, key_custodians=key_custodians,
+            log=self._log + [
+                'updated key custodian passphrase for {}'.format(creds.name)])
 
     def check_creds(self, creds):
         try:
@@ -427,11 +430,25 @@ class KeyFile(object):
         key_custodians[creds.name] = new_kc
         return attr.evolve(
             self, key_custodians=key_custodians, domains=domains,
-            log=self._log + ['key rotation for {} (updated domains: {})'.format(
+            log=self._log + ['rotated key for custodian {} (updated domains -- {})'.format(
                 creds.name, ", ".join(updated))])
 
     def rotate_domain_key(self, domain_name, creds):
         '''
         rotate the keypair used to secure a domain
         '''
-        raise NotImplemented
+        cur_domain = self._domains[domain_name]
+        key_custodian = self._key_custodians[creds.name]
+        cur_secrets = cur_domain.get_decrypted(key_custodian, creds)
+        new_domain = _EncryptedKeyDomain.from_owner(domain_name, key_custodian)
+        for name, val in cur_secrets.items():
+            new_domain.set_secret(name, val)
+        for owner_name in cur_domain.get_owner_names():
+            new_domain.add_owner(
+                cur_creds=creds, cur_key_custodian=key_custodian,
+                new_key_custodian=self._key_custodians[owner_name])
+        domains = dict(self._domains)
+        domains[domain_name] = new_domain
+        return attr.evolve(
+            self, domains=domains,
+            log=self._log + ['rotated key for domain {}'.format(domain_name)])

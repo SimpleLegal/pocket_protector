@@ -8,8 +8,12 @@ import tempfile
 def test_file_keys():
     bob_creds = file_keys.Creds('bob@example.com', 'super-secret')
     alice_creds = file_keys.Creds('alice@example.com', 'super-duper-secret')
+
+    _prev = [None]
     def chk(fk):
         assert fk.from_contents_and_path(fk.get_contents(), fk._path) == fk
+        assert _prev[0] != fk, "function call resulted in no changes to data"
+        _prev[0] = fk
 
     tmp = tempfile.NamedTemporaryFile()
     test = file_keys.KeyFile(path=tmp.name)
@@ -23,6 +27,8 @@ def test_file_keys():
     test = test.add_key_custodian(alice_creds)
     chk(test)
     test = test.add_owner('new_domain', alice_creds.name, bob_creds)
+    chk(test)
+    test = test.rotate_domain_key('new_domain', bob_creds)
     chk(test)
     test = test.rotate_key_custodian_key(bob_creds)
     chk(test)
