@@ -149,10 +149,14 @@ class _Owner(object):
         return base64.b64encode(self._enc_domain_private_key)
 
 
+class PPError(Exception): pass
+class PPKeyError(PPError, KeyError): pass
+
+
 def _err_map_attrib(item_name):
     class MissingErrDict(dict):
         def __missing__(self, key):
-            raise ValueError("no {0} of name {1} (known {0}s are {2})".format(
+            raise PPKeyError("no {0} of name {1} (known {0}s are {2})".format(
                 item_name, key, ", ".join(self)))
     return attr.ib(default=attr.Factory(dict), convert=MissingErrDict)
 
@@ -371,3 +375,30 @@ class KeyFile(object):
         key_custodians[creds.name] = key_custodian.set_passphrase(
             creds, new_passphrase)
         return attr.evolve(self, key_custodians=key_custodians)
+
+    def check_creds(self, creds):
+        try:
+            key_custodian = self._key_custodians[creds.name]
+        except KeyError:
+            return False
+        try:
+            key_custodian.decrypt_as(creds, key_custodian.encrypt_for('\0'))
+        except Exception:  # TODO: what crypto error?
+            return False
+        return True
+
+    def rotate_key_custodian_key(self, creds):
+        '''
+        rotate the key custodian keypair
+        NIST recommends keys be rotated and not kept in use for more than ~1-3 years
+        see http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf
+        Recommendation for Key Management, Part 1: General
+        section 5.3.6 Cryptoperiod Recommendations for Specific Key Types
+        '''
+        raise NotImplemented
+
+    def rotate_domain_key(self, domain_name, creds):
+        '''
+        rotate the keypair used to secure a domain
+        '''
+        raise NotImplemented
