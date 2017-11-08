@@ -35,6 +35,9 @@ def get_argparser():
     list all keys (with list of domains with the key)
 
     # TODO: AtomicSaver
+    # TODO: flag for not confirming password (for rotation
+    # TODO: flag for username on the commandline (-u)
+    # TODO: allow passphrase as envvar
     """
     prs = argparse.ArgumentParser()
     prs.add_argument('--file')
@@ -88,7 +91,6 @@ def main(argv=None):
         modified_kf = kf.add_domain(domain_name, creds.name)
     elif action == 'set_secret':
         print 'Setting secret value.'
-        creds = get_creds()
         domain_name = raw_input('Domain name: ')
         secret_name = raw_input('Secret name: ')
         secret_value = raw_input('Secret value: ')  # TODO: getpass?
@@ -97,9 +99,10 @@ def main(argv=None):
         print 'Adding domain owner.'
         creds = get_creds()
         domain_name = raw_input('Domain name: ')
-        # TODO ?
+        new_owner_name = raw_input('New owner email: ')
+        modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
     elif action == 'set_key_custodian_passphrase':
-        user_id = raw_input('User ID: ')
+        user_id = raw_input('User email: ')
         passphrase = get_pass(confirm_pass=False, label='Current passphrase')
         creds = Creds(user_id, passphrase)
         new_passphrase = get_pass(confirm_pass=True,
@@ -119,7 +122,7 @@ def main(argv=None):
 
 
 def get_creds(confirm_pass=False):
-    user_id = raw_input('User ID: ')
+    user_id = raw_input('User email: ')
     passphrase = get_pass(confirm_pass=confirm_pass)
     return Creds(user_id, passphrase)
 
