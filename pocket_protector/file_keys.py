@@ -74,6 +74,18 @@ class _KeyCustodian(object):
             nacl.secret.SecretBox(derived_key).decrypt(
                 self._enc_custodian_private_key))).decrypt(bytes)
 
+    def with_new_passphrase(self, creds, new_passphrase):
+        'return a copy with an updated passphrase'
+        assert creds.name == self.name
+        derived_key = _kdf(creds)
+        private_key_bytes = nacl.secret.SecretBox(
+            derived_key).decrypt(self._enc_custodian_private_key)
+        new_derived_key = _kdf(Creds(self.name, new_passphrase))
+        new_enc_priv_key_bytes = nacl.secret.SecretBox(
+            new_derived_key).encrypt(private_key_bytes)
+        return attr.evolve(
+            self, enc_custodian_private_key=new_enc_priv_key_bytes)
+
     @classmethod
     def from_creds(cls, creds):
         'create a new user based on new credentials'
@@ -331,3 +343,10 @@ class KeyFile(object):
     def decrypt_domain(self, domain_name, creds):
         return self._domains[domain_name].get_decrypted(
             self._key_custodians[creds.name], creds)
+
+    def update_key_custodian_passphrase(self, creds, new_passphrase):
+        key_custodian = self._key_custodians[creds.name]
+        key_custodians = dict(self._key_custodians)
+        key_custodians[creds.name] = key_custodian.with_new_passphrase(
+            creds, new_passphrase)
+        return attr.evolve(self, key_custodians=key_custodians)

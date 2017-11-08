@@ -13,6 +13,7 @@ def test_file_keys():
     test = test.with_secret('new_domain', 'hello', 'world')
     test = test.with_new_key_custodian(alice_creds)
     test = test.with_owner('new_domain', alice_creds.name, bob_creds)
+    test = test.update_key_custodian_passphrase(bob_creds, 'super-extra-secret')
     test.write()
     round_trip = file_keys.KeyFile.from_file(test._path)
     assert round_trip == test
