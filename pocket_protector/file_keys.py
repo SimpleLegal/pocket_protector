@@ -55,8 +55,8 @@ def _kdf(creds):
     return nacl.pwhash.argon2id.kdf(
         nacl.secret.SecretBox.KEY_SIZE,
         creds.passphrase, hashlib.sha512(creds.name).digest()[:16],
-        opslimit=nacl.pwhash.argon2id.OPSLIMIT_INTERACTIVE,
-        memlimit=nacl.pwhash.argon2id.MEMLIMIT_INTERACTIVE)
+        opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
+        memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
 
 
 @attr.s(frozen=True)
