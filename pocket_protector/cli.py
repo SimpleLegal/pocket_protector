@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import getpass
 import difflib
 import argparse
@@ -56,6 +57,7 @@ def get_argparser():
     subprs.add_parser('add-owner')
     subprs.add_parser('set-secret')
     subprs.add_parser('set-key-custodian-passphrase')
+    subprs.add_parser('decrypt-domain')
 
     return prs
 
@@ -116,6 +118,11 @@ def main(argv=None):
                                   label='New passphrase',
                                   label2='Retype new passphrase')
         modified_kf = kf.set_key_custodian_passphrase(creds, new_passphrase)
+    elif action == 'decrypt-domain':
+        creds = check_creds(kf, get_creds())
+        domain_name = raw_input('Domain name: ')
+        decrypted_dict = kf.decrypt_domain(domain_name, creds)
+        print json.dumps(decrypted_dict, indent=1, sort_keys=True)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
