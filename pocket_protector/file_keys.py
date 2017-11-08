@@ -7,6 +7,11 @@ There are two public classes: KeyFile, and Creds.
 import base64
 import collections
 import hashlib
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 
 import attr
 import nacl.utils
@@ -283,8 +288,7 @@ class KeyFile(object):
             path=path, domains=encrypted_domains,
             key_custodians=key_custodians, log=log)
 
-    def write(self):
-        'write contents to file'
+    def get_contents(self):
         data = collections.OrderedDict(sorted([
             (domain_name, domain.as_data())
             for domain_name, domain in self._domains.items()]))
@@ -292,8 +296,17 @@ class KeyFile(object):
             (name, kc.as_data())
             for name, kc in self._key_custodians.items()]))
         data['audit-log'] = self._log
-        with open(self._path, 'wb') as file:
-            self._yaml.dump(data, file)
+        stream = StringIO()
+        self._yaml.dump(data, stream)
+        text = stream.getvalue()
+        return text
+
+    def write(self):  # TODO: need way to get contents.
+        'write contents to file'
+        contents = self.get_contents()
+        with open(self._path, 'wb') as file:  # TODO: AtomicSaver
+            file.write(contents)
+        return
 
     def with_new_domain(self, domain_name, key_custodian_name):
         '''
