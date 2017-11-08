@@ -28,6 +28,9 @@ def get_argparser():
     remove secret
     truncate audit log
     init/create_protected?
+    rotate key domain keypair
+    rotate key custodian keypair
+    # both rotations require creds but creds stay the same
 
     read-only:
 
