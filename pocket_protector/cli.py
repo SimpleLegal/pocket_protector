@@ -49,11 +49,11 @@ def get_argparser():
     subprs = prs.add_subparsers(dest='action')
 
     subprs.add_parser('init')
-    subprs.add_parser('add_key_custodian')
-    subprs.add_parser('add_domain')
-    subprs.add_parser('add_owner')
-    subprs.add_parser('set_secret')
-    subprs.add_parser('set_key_custodian_passphrase')
+    subprs.add_parser('add-key-custodian')
+    subprs.add_parser('add-domain')
+    subprs.add_parser('add-owner')
+    subprs.add_parser('set-secret')
+    subprs.add_parser('set-key-custodian-passphrase')
 
     return prs
 
@@ -69,7 +69,7 @@ def main(argv=None):
 
     if action == 'init':
         if os.path.exists(file_abs_path):
-            print('file already exists: %s' % file_abs_path)
+            print('File already exists: %s' % file_abs_path)
             return 2
         with open(file_abs_path, 'wb') as f:
             f.write('')  # TODO
@@ -79,32 +79,33 @@ def main(argv=None):
         # TODO: add audit log dates in general
     else:
         if not os.path.exists(file_abs_path):
-            print('no such file: %s' % file_path)
+            print('File not found: %s' % file_path)
+            return 2
         kf = KeyFile.from_file(file_abs_path)
     modified_kf = None
 
-    if action == 'init' or action == 'add_key_custodian':
+    if action == 'init' or action == 'add-key-custodian':
         print 'Adding new key custodian.'
         creds = get_creds(confirm_pass=True)
         modified_kf = kf.add_key_custodian(creds)
-    elif action == 'add_domain':
+    elif action == 'add-domain':
         print 'Adding new domain.'
         creds = get_creds()
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.add_domain(domain_name, creds.name)
-    elif action == 'set_secret':
+    elif action == 'set-secret':
         print 'Setting secret value.'
         domain_name = raw_input('Domain name: ')
         secret_name = raw_input('Secret name: ')
         secret_value = raw_input('Secret value: ')  # TODO: getpass?
         modified_kf = kf.set_secret(domain_name, secret_name, secret_value)
-    elif action == 'add_owner':
+    elif action == 'add-owner':
         print 'Adding domain owner.'
         creds = get_creds()
         domain_name = raw_input('Domain name: ')
         new_owner_name = raw_input('New owner email: ')
         modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
-    elif action == 'set_key_custodian_passphrase':
+    elif action == 'set-key-custodian-passphrase':
         user_id = raw_input('User email: ')
         passphrase = get_pass(confirm_pass=False, label='Current passphrase')
         creds = Creds(user_id, passphrase)
