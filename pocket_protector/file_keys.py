@@ -43,9 +43,6 @@ _FILE_SCHEMA = schema.Schema(
 })
 
 
-class KeyDomainError(ValueError): pass
-
-
 Creds = attr.make_class('KeyCustodianCreds', ['name', 'passphrase'])
 # credentials that can be entered by a user; associated with
 # NOTE: this is a public class since it must be passed in
@@ -57,6 +54,27 @@ def _kdf(creds):
         creds.passphrase, hashlib.sha512(creds.name).digest()[:16],
         opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
         memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
+
+
+def _decode(b64):
+    '''
+    assert everything is version 0
+    later on for e.g. algorithm flexibility
+    version 1, 2, 3 could be added with object
+    specific encoder / decoder
+    (this would be a lot of code work, but the files would
+    be forwards compatible, and backwards can at least
+    detect the problem and notify the user cleanly)
+    '''
+    raw = base64.b64decode(b64)
+    if raw[0] == '\0':
+        return raw[1:]
+    raise ValueError('version {} object not supported')
+
+
+def _encode(raw):
+    'add version 0 byte to everything'
+    return base64.b64encode('\0' + raw)
 
 
 @attr.s(frozen=True)
@@ -109,17 +127,16 @@ class _KeyCustodian(object):
         return cls(
             name=name,
             public_key=nacl.public.PublicKey(
-                base64.b64decode(data['public-key'])),
-            enc_custodian_private_key=base64.b64decode(
+                decode(data['public-key'])),
+            enc_custodian_private_key=_decode(
                 data['encrypted-private-key']),
         )
 
     def as_data(self):
         return {
-            'public-key':
-                base64.b64encode(self._public_key.encode()),
+            'public-key': _encode(self._public_key.encode()),
             'encrypted-private-key':
-                base64.b64encode(self._enc_custodian_private_key),
+                _encode(self._enc_custodian_private_key),
         }
 
 
@@ -143,10 +160,10 @@ class _Owner(object):
 
     @classmethod
     def from_data(cls, name, encrypted_private_key_bytes):
-        return cls(name, base64.b64decode(encrypted_private_key_bytes))
+        return cls(name, _decode(encrypted_private_key_bytes))
 
     def as_data(self):
-        return base64.b64encode(self._enc_domain_private_key)
+        return _encode(self._enc_domain_private_key)
 
 
 class PPError(Exception): pass
@@ -223,23 +240,23 @@ class _EncryptedKeyDomain(object):
         return cls(
             name=name,
             pub_key=nacl.public.PublicKey(
-                base64.b64decode(data['meta']['public-key'])),
+                _decode(data['meta']['public-key'])),
             owners={
                 name: _Owner.from_data(name, owner_data)
                 for name, owner_data in data['meta']['owners'].items()},
             secrets={
-                name.split('secret-', 1)[1]: base64.b64decode(val)
+                name.split('secret-', 1)[1]: _decode(val)
                 for name, val in data.items()
                 if name.startswith('secret-')})
 
     def as_data(self):
         'convert instance to nested dict/list/str'
-        data = { "secret-" + name: base64.b64encode(val)
+        data = { "secret-" + name: _encode(val)
                  for name, val in self._secrets.items() }
         # ensure keys go in sorted order
         data = collections.OrderedDict(sorted(data.items()))
         data['meta'] = collections.OrderedDict([
-            ("public-key", base64.b64encode(self._pub_key.encode())),
+            ("public-key", _encode(self._pub_key.encode())),
             ("owners", collections.OrderedDict(
                 sorted([(name, owner.as_data()) for name, owner in self._owners.items()]))),
         ])
