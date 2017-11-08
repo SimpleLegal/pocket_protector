@@ -22,6 +22,8 @@ import schema
 import ruamel.yaml
 
 
+# TODO: reserve domain name "meta"
+# TODO: schema currently requires at least one domain, but creation doesn't add a default one.
 _FILE_SCHEMA = schema.Schema(
 {
     "audit-log": [str],
@@ -79,7 +81,7 @@ class _KeyCustodian(object):
             nacl.secret.SecretBox(derived_key).decrypt(
                 self._enc_custodian_private_key))).decrypt(bytes)
 
-    def with_new_passphrase(self, creds, new_passphrase):
+    def set_passphrase(self, creds, new_passphrase):
         'return a copy with an updated passphrase'
         assert creds.name == self.name
         derived_key = _kdf(creds)
@@ -179,14 +181,14 @@ class _EncryptedKeyDomain(object):
             secrets[name] = box.decrypt(val)
         return _KeyDomain(secrets)
 
-    def with_secret(self, name, value):
+    def set_secret(self, name, value):
         'return a copy of the EncryptedKeyDomain with the new secret name/value'
         secrets = self._secrets
         box = nacl.public.SealedBox(self._pub_key)
         secrets[name] = box.encrypt(value)
         return attr.evolve(self, secrets=secrets)
 
-    def with_owner(self, cur_creds, cur_key_custodian, new_key_custodian):
+    def add_owner(self, cur_creds, cur_key_custodian, new_key_custodian):
         'add a new owner based on a current owners credentials'
         domain_private_key = self._decrypt_private_key(
             cur_key_custodian, cur_creds)
@@ -308,7 +310,7 @@ class KeyFile(object):
             file.write(contents)
         return
 
-    def with_new_domain(self, domain_name, key_custodian_name):
+    def add_domain(self, domain_name, key_custodian_name):
         '''
         return a copy with a new domain, empty but with one initial key custodian
         owner who can add other owners
@@ -324,21 +326,21 @@ class KeyFile(object):
             log=self._log + ['created domain {} with owner {}'.format(
                 domain_name, key_custodian_name)])
 
-    def with_secret(self, domain_name, name, value):
-        'return a copy if the KeyFile with the given secret name and value added to a domain'
+    def set_secret(self, domain_name, name, value):
+        'return a copy of the KeyFile with the given secret name and value added to a domain'
         domains = dict(self._domains)
-        domains[domain_name] = self._domains[domain_name].with_secret(name, value)
+        domains[domain_name] = self._domains[domain_name].set_secret(name, value)
         return attr.evolve(
             self, domains=domains,
             log=self._log + ['created secret {} in {}'.format(name, domain_name)])
 
-    def with_owner(self, domain_name, key_custodian_name, creds):
+    def add_owner(self, domain_name, key_custodian_name, creds):
         '''
         Register a new key custodian owner of domain_name based on the
         credentials of an existing owner
         '''
         domains = dict(self._domains)
-        domains[domain_name] = self._domains[domain_name].with_owner(
+        domains[domain_name] = self._domains[domain_name].add_owner(
             cur_creds=creds, cur_key_custodian=self._key_custodians[creds.name],
             new_key_custodian=self._key_custodians[key_custodian_name])
         return attr.evolve(
@@ -346,7 +348,7 @@ class KeyFile(object):
             log=self._log + ['{} added owner {} to {}'.format(
                 creds.name, key_custodian_name, domain_name)])
 
-    def with_new_key_custodian(self, creds):
+    def add_key_custodian(self, creds):
         key_custodians = dict(self._key_custodians)
         key_custodians[creds.name] = _KeyCustodian.from_creds(creds)
         return attr.evolve(
@@ -357,9 +359,9 @@ class KeyFile(object):
         return self._domains[domain_name].get_decrypted(
             self._key_custodians[creds.name], creds)
 
-    def update_key_custodian_passphrase(self, creds, new_passphrase):
+    def set_key_custodian_passphrase(self, creds, new_passphrase):
         key_custodian = self._key_custodians[creds.name]
         key_custodians = dict(self._key_custodians)
-        key_custodians[creds.name] = key_custodian.with_new_passphrase(
+        key_custodians[creds.name] = key_custodian.set_passphrase(
             creds, new_passphrase)
         return attr.evolve(self, key_custodians=key_custodians)
