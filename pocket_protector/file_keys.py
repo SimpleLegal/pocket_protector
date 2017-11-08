@@ -246,13 +246,11 @@ class _EncryptedKeyDomain(object):
         return data
 
 
-@attr.s(frozen=True)
-class _KeyDomain(object):
+class _KeyDomain(dict):
     'Represents a decrypted key domain which secrets can be read from'
-    _secrets = _err_map_attrib('secret')
-
-    def __getitem__(self, name):
-        return self._secrets[name]
+    def __missing__(self, key):
+        raise KeyError("no secret {} (known secrets are {})".format(
+            key, ", ".join(self)))
 
 
 def _represent_ordereddict(dumper, data):
