@@ -120,7 +120,7 @@ def main(argv=None):
 
     if kwargs['confirm_diff']:
         print 'Changes to be written:\n'
-        print '\n'.join(difflib.context_diff(kf.get_contents().splitlines(),
+        print '\n'.join(difflib.unified_diff(kf.get_contents().splitlines(),
                                              modified_kf.get_contents().splitlines(),
                                              file_path + '.old', file_path + '.new'))
         print
