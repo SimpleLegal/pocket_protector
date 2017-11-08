@@ -3,6 +3,7 @@
 import os
 import sys
 import getpass
+import difflib
 import argparse
 
 from file_keys import KeyFile, Creds
@@ -43,9 +44,10 @@ def get_argparser():
     # TODO: allow passphrase as envvar
     """
     prs = argparse.ArgumentParser()
-    prs.add_argument('--file')
-    prs.add_argument('--dry-run', action='store_true', help='TBI: show diff instead of writing changes to file')
-    # TODO: confirm-changes instead of dry-run? due to the amount of user interaction
+    prs.add_argument('--file',
+                     help='the file to pocket protect, defaults to protected.yaml in the working directory')
+    prs.add_argument('--confirm-diff', action='store_true',
+                     help='show diff before modifying the file')
     subprs = prs.add_subparsers(dest='action')
 
     subprs.add_parser('init')
@@ -116,8 +118,16 @@ def main(argv=None):
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
-    if kwargs['dry_run']:
-        return 0  # TODO
+    if kwargs['confirm_diff']:
+        print 'Changes to be written:\n'
+        print '\n'.join(difflib.context_diff(kf.get_contents().splitlines(),
+                                             modified_kf.get_contents().splitlines(),
+                                             file_path + '.old', file_path + '.new'))
+        print
+        do_write = raw_input('Write changes? [y/N] ')
+        if not do_write.lower().startswith('y'):
+            print 'Aborting...'
+            return 0
 
     if modified_kf:
         modified_kf.write()
