@@ -201,6 +201,9 @@ class _EncryptedKeyDomain(object):
             new_key_custodian, domain_private_key)
         return attr.evolve(self, owners=owners)
 
+    def get_owner_names(self):
+        return list(self._owners)
+
     @classmethod
     def from_owner(cls, name, key_custodian):
         'create a new (empty) EncryptedKeyDomain with an initial owner'
@@ -395,7 +398,22 @@ class KeyFile(object):
         Recommendation for Key Management, Part 1: General
         section 5.3.6 Cryptoperiod Recommendations for Specific Key Types
         '''
-        raise NotImplemented
+        new_kc = _KeyCustodian.from_creds(creds)
+        cur_kc = self._key_custodians[creds.name]
+        domains = dict(self._domains)
+        updated = []
+        for name, domain in domains.items():
+            if creds.name in domain.get_owner_names():
+                domains[name] = self._domains[name].add_owner(
+                    cur_creds=creds, cur_key_custodian=cur_kc,
+                    new_key_custodian=new_kc)
+                updated.append(name)
+        key_custodians = dict(self._key_custodians)
+        key_custodians[creds.name] = new_kc
+        return attr.evolve(
+            self, key_custodians=key_custodians, domains=domains,
+            log=self._log + ['key rotation for {} (updated domains: {})'.format(
+                creds.name, ", ".join(updated))])
 
     def rotate_domain_key(self, domain_name, creds):
         '''

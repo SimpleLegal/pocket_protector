@@ -24,6 +24,8 @@ def test_file_keys():
     chk(test)
     test = test.add_owner('new_domain', alice_creds.name, bob_creds)
     chk(test)
+    test = test.rotate_key_custodian_key(bob_creds)
+    chk(test)
     test = test.set_key_custodian_passphrase(bob_creds, 'super-extra-secret')
     test.write()
     round_trip = file_keys.KeyFile.from_file(test._path)
