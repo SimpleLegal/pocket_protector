@@ -26,20 +26,19 @@ _FILE_SCHEMA = schema.Schema(
 {
     "audit-log": [str],
     "key-custodians": {
-        str: {
+        schema.Optional(str): {
             "public-key": str,
             "encrypted-private-key": str,
         },
     },
-    schema.Optional(
-        # allow strings for security domains,
-        # except meta is reserved
-        schema.Regex("^(?!meta).*$")): {
+    schema.Optional(schema.Regex("^(?!meta).*$")): {
+    # allow string names for security domains,
+    # but meta is reserved
         "meta": {
             "owners": {str: str},
             "public-key": str,
         },
-        schema.Regex("secret-.*"): str,
+        schema.Optional(schema.Regex("secret-.*")): str,
     },
 })
 
@@ -278,7 +277,13 @@ class KeyFile(object):
     def from_file(cls, path):
         'create a new KeyFile from path'
         with open(path, 'rb') as file:
-            contents = cls._yaml.load(file.read())
+            contents = file.read()
+        return cls.from_contents_and_path(contents, path)
+
+    @classmethod
+    def from_contents_and_path(cls, bytes, path):
+        'create a new KeyFile from file contents'
+        contents = cls._yaml.load(bytes)
         _FILE_SCHEMA.validate(contents)
         log = contents.pop('audit-log')
         key_custodians = {
