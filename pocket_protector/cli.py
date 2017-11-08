@@ -72,7 +72,7 @@ def main(argv=None):
     if action == 'init':
         if os.path.exists(file_abs_path):
             print('File already exists: %s' % file_abs_path)
-            return 2
+            sys.exit(2)
         with open(file_abs_path, 'wb') as f:
             f.write('')  # TODO
             # TODO: automatically remove file if init fails
@@ -82,7 +82,7 @@ def main(argv=None):
     else:
         if not os.path.exists(file_abs_path):
             print('File not found: %s' % file_path)
-            return 2
+            sys.exit(2)
         kf = KeyFile.from_file(file_abs_path)
     modified_kf = None
 
@@ -120,6 +120,7 @@ def main(argv=None):
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
     if kwargs['confirm_diff']:
+        # TODO: colorize
         print 'Changes to be written:\n'
         print '\n'.join(difflib.unified_diff(kf.get_contents().splitlines(),
                                              modified_kf.get_contents().splitlines(),
@@ -128,7 +129,7 @@ def main(argv=None):
         do_write = raw_input('Write changes? [y/N] ')
         if not do_write.lower().startswith('y'):
             print 'Aborting...'
-            return 0
+            sys.exit(0)
 
     if modified_kf:
         modified_kf.write()
