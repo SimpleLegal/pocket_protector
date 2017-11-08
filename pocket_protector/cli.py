@@ -88,11 +88,11 @@ def main(argv=None):
 
     if action == 'init' or action == 'add-key-custodian':
         print 'Adding new key custodian.'
-        creds = get_creds(confirm_pass=True)
+        creds = check_creds(kf, get_creds(confirm_pass=True))
         modified_kf = kf.add_key_custodian(creds)
     elif action == 'add-domain':
         print 'Adding new domain.'
-        creds = get_creds()
+        creds = check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.add_domain(domain_name, creds.name)
     elif action == 'set-secret':
@@ -103,7 +103,7 @@ def main(argv=None):
         modified_kf = kf.set_secret(domain_name, secret_name, secret_value)
     elif action == 'add-owner':
         print 'Adding domain owner.'
-        creds = get_creds()
+        creds = check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         new_owner_name = raw_input('New owner email: ')
         modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
@@ -111,6 +111,7 @@ def main(argv=None):
         user_id = raw_input('User email: ')
         passphrase = get_pass(confirm_pass=False, label='Current passphrase')
         creds = Creds(user_id, passphrase)
+        check_creds(kf, creds)
         new_passphrase = get_pass(confirm_pass=True,
                                   label='New passphrase',
                                   label2='Retype new passphrase')
@@ -135,10 +136,18 @@ def main(argv=None):
     return
 
 
+def check_creds(kf, creds):
+    if not kf.check_creds(creds):
+        print 'Invalid user credentials. Check email and passphrase and try again.'
+        sys.exit(1)
+    return creds
+
+
 def get_creds(confirm_pass=False):
     user_id = raw_input('User email: ')
     passphrase = get_pass(confirm_pass=confirm_pass)
-    return Creds(user_id, passphrase)
+    ret = Creds(user_id, passphrase)
+    return ret
 
 
 def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'):
