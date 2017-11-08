@@ -90,7 +90,7 @@ def main(argv=None):
 
     if action == 'init' or action == 'add-key-custodian':
         print 'Adding new key custodian.'
-        creds = check_creds(kf, get_creds(confirm_pass=True))
+        creds = get_creds(confirm_pass=True)
         modified_kf = kf.add_key_custodian(creds)
     elif action == 'add-domain':
         print 'Adding new domain.'
