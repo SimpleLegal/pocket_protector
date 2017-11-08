@@ -22,8 +22,6 @@ import schema
 import ruamel.yaml
 
 
-# TODO: reserve domain name "meta"
-# TODO: schema currently requires at least one domain, but creation doesn't add a default one.
 _FILE_SCHEMA = schema.Schema(
 {
     "audit-log": [str],
@@ -33,7 +31,10 @@ _FILE_SCHEMA = schema.Schema(
             "encrypted-private-key": str,
         },
     },
-    str: {
+    schema.Optional(
+        # allow strings for security domains,
+        # except meta is reserved
+        schema.Regex("^(?!meta).*$")): {
         "meta": {
             "owners": {str: str},
             "public-key": str,
