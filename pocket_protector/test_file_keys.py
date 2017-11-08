@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import file_keys
 
 import tempfile
+
 
 def test_file_keys():
     bob_creds = file_keys.Creds('bob@example.com', 'super-secret')
@@ -8,12 +11,12 @@ def test_file_keys():
 
     tmp = tempfile.NamedTemporaryFile()
     test = file_keys.KeyFile(path=tmp.name)
-    test = test.with_new_key_custodian(bob_creds)
-    test = test.with_new_domain('new_domain', bob_creds.name)
-    test = test.with_secret('new_domain', 'hello', 'world')
-    test = test.with_new_key_custodian(alice_creds)
-    test = test.with_owner('new_domain', alice_creds.name, bob_creds)
-    test = test.update_key_custodian_passphrase(bob_creds, 'super-extra-secret')
+    test = test.add_key_custodian(bob_creds)
+    test = test.add_domain('new_domain', bob_creds.name)
+    test = test.set_secret('new_domain', 'hello', 'world')
+    test = test.add_key_custodian(alice_creds)
+    test = test.add_owner('new_domain', alice_creds.name, bob_creds)
+    test = test.set_key_custodian_passphrase(bob_creds, 'super-extra-secret')
     test.write()
     round_trip = file_keys.KeyFile.from_file(test._path)
     assert round_trip == test
