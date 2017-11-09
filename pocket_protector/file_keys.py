@@ -204,7 +204,7 @@ class _EncryptedKeyDomain(object):
 
     def set_secret(self, name, value):
         'return a copy of the EncryptedKeyDomain with the new secret name/value'
-        secrets = self._secrets
+        secrets = dict(self._secrets)
         box = nacl.public.SealedBox(self._pub_key)
         secrets[name] = box.encrypt(value)
         return attr.evolve(self, secrets=secrets)
