@@ -24,12 +24,18 @@ def test_file_keys():
     chk(test)
     test = test.set_secret('new_domain', 'hello', 'world')
     chk(test)
+    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'world'
+    test = test.set_secret('new_domain', 'hello', 'better-world')
+    chk(test)
+    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'better-world'
     test = test.add_key_custodian(alice_creds)
     chk(test)
     test = test.add_owner('new_domain', alice_creds.name, bob_creds)
     chk(test)
+    before_rotate = test.decrypt_domain('new_domain', bob_creds)
     test = test.rotate_domain_key('new_domain', bob_creds)
     chk(test)
+    assert test.decrypt_domain('new_domain', bob_creds) == before_rotate
     test = test.rotate_key_custodian_key(bob_creds)
     chk(test)
     test = test.set_key_custodian_passphrase(bob_creds, 'super-extra-secret')
@@ -49,3 +55,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         pdb.post_mortem()
+ 
