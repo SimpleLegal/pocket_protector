@@ -26,20 +26,20 @@ def get_argparser():
 
     actions:
 
-    add key custodian
-    add domain
-    add owner
-    set secret
-    set key custodian passphrase
-    remove key custodian
-    remove domain
-    remove owner
-    remove secret
-    truncate audit log
-    init/create_protected?
-    rotate key domain keypair
-    rotate key custodian keypair
-    # both rotations require creds but creds stay the same
+    init - done
+    add key custodian - done
+    add domain - done
+    add owner - done
+    set secret - done
+    set key custodian passphrase - done
+    remove key custodian - needs backend
+    remove domain - needs backend
+    remove owner - needs backend
+    remove secret - needs backend
+    truncate audit log - needs backend
+    rotate key domain keypair - done
+    rotate key custodian keypair - done
+    # both rotations require creds but externally-used creds (passphrases) stay the same
 
     read-only:
 
@@ -129,6 +129,13 @@ def main(argv=None):
         domain_name = raw_input('Domain name: ')
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
         print json.dumps(decrypted_dict, indent=2, sort_keys=True)
+    elif action == 'rotate-domain-key':
+        creds = check_creds(kf, get_creds())
+        domain_name = raw_input('Domain name: ')
+        modified_kf = kf.rotate_domain_key(domain_name, creds)
+    elif action == 'rotate-key-custodian-key':
+        creds = check_creds(kf, get_creds())
+        modified_kf = kf.rotate_key_custodian_key(creds)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
