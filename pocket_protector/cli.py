@@ -9,13 +9,20 @@ import argparse
 
 from file_keys import KeyFile, Creds
 
+_ANSI_FORE_RED = '\x1b[31m'
+_ANSI_FORE_GREEN = '\x1b[32m'
+_ANSI_RESET_ALL = '\x1b[0m'
+
+# TODO: custodian-signed values. allow custodians to sign values
+# added/set by others, then produced reports on which keys have been
+# updated/changed but not signed yet. enables a review/audit mechanism.
 
 def get_argparser():
     """
     args:
 
     path to file
-    dry run (shows diff)
+    confirm-diff
 
     actions:
 
@@ -122,16 +129,17 @@ def main(argv=None):
         creds = check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
-        print json.dumps(decrypted_dict, indent=1, sort_keys=True)
+        print json.dumps(decrypted_dict, indent=2, sort_keys=True)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
     if kwargs['confirm_diff']:
-        # TODO: colorize
+        diff_lines = list(difflib.unified_diff(kf.get_contents().splitlines(),
+                                               modified_kf.get_contents().splitlines(),
+                                               file_path + '.old', file_path + '.new'))
+        diff_lines = _get_colorized_lines(diff_lines)
         print 'Changes to be written:\n'
-        print '\n'.join(difflib.unified_diff(kf.get_contents().splitlines(),
-                                             modified_kf.get_contents().splitlines(),
-                                             file_path + '.old', file_path + '.new'))
+        print '\n'.join(diff_lines)
         print
         do_write = raw_input('Write changes? [y/N] ')
         if not do_write.lower().startswith('y'):
@@ -142,6 +150,16 @@ def main(argv=None):
         modified_kf.write()
 
     return
+
+
+def _get_colorized_lines(lines):
+    ret = []
+    colors = {'-': _ANSI_FORE_RED, '+': _ANSI_FORE_GREEN}
+    for line in lines:
+        if line[0] in colors:
+            line = colors[line[0]] + line + _ANSI_RESET_ALL
+        ret.append(line)
+    return ret
 
 
 def check_creds(kf, creds):
