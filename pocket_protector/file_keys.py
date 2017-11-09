@@ -20,6 +20,7 @@ import nacl.secret
 import nacl.pwhash
 import schema
 import ruamel.yaml
+from boltons.fileutils import atomic_save
 
 
 _FILE_SCHEMA = schema.Schema(
@@ -334,7 +335,7 @@ class KeyFile(object):
     def write(self):  # TODO: need way to get contents.
         'write contents to file'
         contents = self.get_contents()
-        with open(self._path, 'wb') as file:  # TODO: AtomicSaver
+        with atomic_save(self._path) as file:
             file.write(contents)
         return
 
@@ -360,7 +361,7 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].set_secret(name, value)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['created secret {} in {}'.format(name, domain_name)])
+            log=self._log + ['set secret {} in {}'.format(name, domain_name)])
 
     def add_owner(self, domain_name, key_custodian_name, creds):
         '''

@@ -46,8 +46,7 @@ def get_argparser():
     list domains
     list all keys (with list of domains with the key)
 
-    # TODO: AtomicSaver
-    # TODO: flag for not confirming password (for rotation
+    # TODO: flag for not confirming password (for rotation)
     # TODO: flag for username on the commandline (-u)
     # TODO: allow passphrase as envvar
     """
