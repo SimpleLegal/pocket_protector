@@ -192,6 +192,22 @@ def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase')
     return passphrase
 
 
+# TODO: allow separate env vars
+def full_get_creds(args=None, env_var_prefix='PPROTECT_'):
+    # prefer command line
+    # TODO: pick up quiet flag
+    user = None
+    if args:
+        user = getattr(args, 'user')
+
+    # then check environment variables
+
+    user_env_var_name = env_var_prefix + 'USER'
+    passphrase_env_var_name = env_var_prefix + 'PASSPHRASE'
+    # warn if set and empty
+    # try and fail with clean error if incorrect
+
+    # finally ask on stdin (but only if not quiet)
 
 
 if __name__ == '__main__':
