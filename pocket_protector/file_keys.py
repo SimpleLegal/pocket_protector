@@ -172,11 +172,31 @@ class PPKeyError(PPError, KeyError): pass
 
 
 def _err_map_attrib(item_name):
+    'utility for giving good error messages'
     class MissingErrDict(dict):
         def __missing__(self, key):
             raise PPKeyError("no {0} of name {1} (known {0}s are {2})".format(
                 item_name, key, ", ".join(self)))
     return attr.ib(default=attr.Factory(dict), convert=MissingErrDict)
+
+
+def _deleted(mapping, key):
+    '''
+    like sort() vs sorted(), return a dict copy of mapping
+    with key del'd out
+    '''
+    ret = dict(mapping)
+    del ret[key]
+    return ret
+
+
+def _setitem(mapping, key, val):
+    '''
+    returns a dict-copy of mapping with key set to val
+    '''
+    ret = dict(mapping)
+    ret[key] = val
+    return ret
 
 
 @attr.s(frozen=True)
@@ -185,7 +205,7 @@ class _EncryptedKeyDomain(object):
     _name = attr.ib()
     _pub_key = attr.ib()
     _secrets = attr.ib()
-    _owners = _err_map_attrib('key custodian')
+    _owners = _err_map_attrib('owner')
 
     def _decrypt_private_key(self, key_custodian, creds):
         return nacl.public.PrivateKey(
@@ -218,6 +238,17 @@ class _EncryptedKeyDomain(object):
         owners[new_key_custodian.name] = _Owner.from_custodian_and_pkey(
             new_key_custodian, domain_private_key)
         return attr.evolve(self, owners=owners)
+
+    def rm_owner(self, key_custodian_name):
+        'remove owner, checking that domain has at least one user'
+        if key_custodian_name not in self._owners:
+            raise ValueError("{} not an owner of {} (owners are {})".format(
+                key_custodian_name, self._name, ", ".join(self._owners)))
+        if len(self._owners) == 1:
+            raise ValueError(
+                "cannot delete last owner {} from {} "
+                "(secrets would be irretrievable)".format(key_custodian_name, self._name))
+        return attr.evolve(self, owners=_deleted(self._owners, key_custodian_name))
 
     def get_owner_names(self):
         return list(self._owners)
@@ -377,12 +408,44 @@ class KeyFile(object):
             log=self._log + ['{} added owner {} to {}'.format(
                 creds.name, key_custodian_name, domain_name)])
 
+    def rm_owner(self, domain_name, key_custodian_name):
+        '''
+        Remove an owner from domain.
+        (NOTE: due to file history, the removed owner
+        will still be able to get to values untill you rotate
+        the domain keypair, and secret values)
+        '''
+        return attr.evolve(
+            self, domains=_setitem(
+                self._domains, domain_name,
+                self._domains[domain_name].rm_owner(key_custodian_name)),
+            log=self._log + ['removed owner {} from {}'.format(
+                key_custodian_name, domain_name)])
+
     def add_key_custodian(self, creds):
         key_custodians = dict(self._key_custodians)
+        if creds.name in key_custodians:
+            raise ValueError(
+                'tried to add key custodian that already exists: {}'.format(creds.name))
         key_custodians[creds.name] = _KeyCustodian.from_creds(creds)
         return attr.evolve(
             self, key_custodians=key_custodians,
             log=self._log + ['created key custodian {}'.format(creds.name)])
+
+    def rm_key_custodian(self, key_custodian_name):
+        'remove key custodian and all domain ownerships'
+        key_custodians = dict(self._key_custodians)
+        domains = dict(self._domains)
+        owned = []
+        for name, domain in self._domains.items():
+            if key_custodian_name in domain.get_owner_names():
+                domains[name] = domain.rm_owner(key_custodian_name)
+                owned.append(name)
+        del key_custodians[key_custodian_name]
+        return attr.evolve(
+            self, key_custodians=key_custodians, domains=domains,
+            log=self._log + ['removed key custodian {} (was owner of {})'.format(
+                key_custodian_name, ", ".join(owned))])
 
     def decrypt_domain(self, domain_name, creds):
         return self._domains[domain_name].get_decrypted(
@@ -443,9 +506,9 @@ class KeyFile(object):
         cur_secrets = cur_domain.get_decrypted(key_custodian, creds)
         new_domain = _EncryptedKeyDomain.from_owner(domain_name, key_custodian)
         for name, val in cur_secrets.items():
-            new_domain.set_secret(name, val)
+            new_domain = new_domain.set_secret(name, val)
         for owner_name in cur_domain.get_owner_names():
-            new_domain.add_owner(
+            new_domain = new_domain.add_owner(
                 cur_creds=creds, cur_key_custodian=key_custodian,
                 new_key_custodian=self._key_custodians[owner_name])
         domains = dict(self._domains)

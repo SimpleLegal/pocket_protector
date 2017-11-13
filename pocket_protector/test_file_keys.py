@@ -16,29 +16,33 @@ def test_file_keys():
         _prev[0] = fk
 
     tmp = tempfile.NamedTemporaryFile()
-    test = file_keys.KeyFile(path=tmp.name)
+    test1 = test = file_keys.KeyFile(path=tmp.name)
     chk(test)
-    test = test.add_key_custodian(bob_creds)
+    test2 = test = test.add_key_custodian(bob_creds)
     chk(test)
-    test = test.add_domain('new_domain', bob_creds.name)
+    test3 = test = test.add_domain('new_domain', bob_creds.name)
     chk(test)
-    test = test.set_secret('new_domain', 'hello', 'world')
+    test4 = test = test.set_secret('new_domain', 'hello', 'world')
     chk(test)
     assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'world'
-    test = test.set_secret('new_domain', 'hello', 'better-world')
+    test5 = test = test.set_secret('new_domain', 'hello', 'better-world')
     chk(test)
     assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'better-world'
-    test = test.add_key_custodian(alice_creds)
+    test6 = test = test.add_key_custodian(alice_creds)
     chk(test)
-    test = test.add_owner('new_domain', alice_creds.name, bob_creds)
+    test7 = test = test.add_owner('new_domain', alice_creds.name, bob_creds)
     chk(test)
+    test8 = _test = test.rm_owner('new_domain', alice_creds.name)
+    chk(_test)  # throw away this mutation
+    test9 = _test = test.rm_key_custodian(alice_creds.name)
+    chk(_test)  # throw away this mutation
     before_rotate = test.decrypt_domain('new_domain', bob_creds)
-    test = test.rotate_domain_key('new_domain', bob_creds)
+    test10 = test = test.rotate_domain_key('new_domain', bob_creds)
     chk(test)
     assert test.decrypt_domain('new_domain', bob_creds) == before_rotate
-    test = test.rotate_key_custodian_key(bob_creds)
+    test11 = test = test.rotate_key_custodian_key(bob_creds)
     chk(test)
-    test = test.set_key_custodian_passphrase(bob_creds, 'super-extra-secret')
+    test12 = test = test.set_key_custodian_passphrase(bob_creds, 'super-extra-secret')
     test.write()
     round_trip = file_keys.KeyFile.from_file(test._path)
     assert round_trip == test
