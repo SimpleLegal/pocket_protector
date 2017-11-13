@@ -204,7 +204,7 @@ class _EncryptedKeyDomain(object):
     'Represents a key domain with all values encrypted.'
     _name = attr.ib()
     _pub_key = attr.ib()
-    _secrets = attr.ib()
+    _secrets = _err_map_attrib('secret')
     _owners = _err_map_attrib('owner')
 
     def _decrypt_private_key(self, key_custodian, creds):
@@ -229,6 +229,21 @@ class _EncryptedKeyDomain(object):
         box = nacl.public.SealedBox(self._pub_key)
         secrets[name] = box.encrypt(value)
         return attr.evolve(self, secrets=secrets)
+
+    def add_secret(self, name, value):
+        'like set_secret, but errors if secret exists'
+        if name in self._secrets:
+            raise ValueError('secret {} already exists in {}'.format(
+                name, self._name))
+        return self.set_secret(name, value)
+
+    def update_secret(self, name, value):
+        'like set_secret, but errors if secret doesnt exist'
+        chk = self._secrets[name]  # for error msg
+        return self.set_secret(name, value)
+
+    def rm_secret(self, name):
+        return attr.evolve(self, secrets=_deleted(self._secrets, name))
 
     def add_owner(self, cur_creds, cur_key_custodian, new_key_custodian):
         'add a new owner based on a current owners credentials'
@@ -386,6 +401,14 @@ class KeyFile(object):
             log=self._log + ['created domain {} with owner {}'.format(
                 domain_name, key_custodian_name)])
 
+    def rm_domain(self, domain_name):
+        '''
+        return a copy with domain domain_name removed
+        '''
+        return attr.evolve(
+            self, domains=_deleted(self._domains, domain_name),
+            log=self._log + ['deleted domain {}'.format(domain_name)])
+
     def set_secret(self, domain_name, name, value):
         'return a copy of the KeyFile with the given secret name and value added to a domain'
         domains = dict(self._domains)
@@ -393,6 +416,30 @@ class KeyFile(object):
         return attr.evolve(
             self, domains=domains,
             log=self._log + ['set secret {} in {}'.format(name, domain_name)])
+
+    def add_secret(self, domain_name, name, value):
+        'add a secret that doesnt exist yet'
+        domains = dict(self._domains)
+        domains[domain_name] = self._domains[domain_name].add_secret(name, value)
+        return attr.evolve(
+            self, domains=domains,
+            log=self._log + ['added secret {} in {}'.format(name, domain_name)])
+
+    def update_secret(self, domain_name, name, value):
+        'update the value of a secret that already exists'
+        domains = dict(self._domains)
+        domains[domain_name] = self._domains[domain_name].update_secret(name, value)
+        return attr.evolve(
+            self, domains=domains,
+            log=self._log + ['updated secret {} in {}'.format(name, domain_name)])
+
+    def rm_secret(self, domain_name, name):
+        'return a copy with secret removed from domain'
+        domains = dict(self._domains)
+        domains[domain_name] = self._domains[domain_name].rm_secret(name)
+        return attr.evolve(
+            self, domains=domains,
+            log=self._log + ['removed secret {} from {}'.format(name, domain_name)])
 
     def add_owner(self, domain_name, key_custodian_name, creds):
         '''

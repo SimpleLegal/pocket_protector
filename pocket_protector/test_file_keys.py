@@ -22,7 +22,15 @@ def test_file_keys():
     chk(test)
     test3 = test = test.add_domain('new_domain', bob_creds.name)
     chk(test)
+    test3a = test = test.add_secret('new_domain', 'hello', 'world')
+    chk(test)
+    test3b = test = test.update_secret('new_domain', 'hello', 'world2')
+    chk(test)
     test4 = test = test.set_secret('new_domain', 'hello', 'world')
+    chk(test)
+    test4a = test = test.rm_secret('new_domain', 'hello')
+    chk(test)
+    test4b = test = test.set_secret('new_domain', 'hello', 'world')
     chk(test)
     assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'world'
     test5 = test = test.set_secret('new_domain', 'hello', 'better-world')
@@ -36,6 +44,8 @@ def test_file_keys():
     chk(_test)  # throw away this mutation
     test9 = _test = test.rm_key_custodian(alice_creds.name)
     chk(_test)  # throw away this mutation
+    test9a = _test = test.rm_domain('new_domain')
+    chk(_test)
     before_rotate = test.decrypt_domain('new_domain', bob_creds)
     test10 = test = test.rotate_domain_key('new_domain', bob_creds)
     chk(test)
