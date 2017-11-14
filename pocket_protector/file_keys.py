@@ -563,3 +563,11 @@ class KeyFile(object):
         return attr.evolve(
             self, domains=domains,
             log=self._log + ['rotated key for domain {}'.format(domain_name)])
+
+    def truncate_audit_log(self, max_keep):
+        max_keep = int(max_keep)
+        if len(self._log) < max_keep:
+            return self
+        msg = 'truncated %s audit log entries' % (len(self._log) - max_keep)
+        new_log = [msg] + self._log[-max_keep:]
+        return attr.evolve(self, log=new_log)
