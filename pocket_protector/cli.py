@@ -66,7 +66,9 @@ def get_argparser():
                'add-owner',
                'set-secret',
                'set-key-custodian-passphrase',
-               'decrypt-domain']
+               'decrypt-domain',
+               'rotate-key-custodian-keys',
+               'rotate-domain-keys']
 
     subprs = prs.add_subparsers(dest='action')
     subprs.add_parser('version')
@@ -189,11 +191,11 @@ def _main(kf, action, args):
         domain_name = raw_input('Domain name: ')
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
         print json.dumps(decrypted_dict, indent=2, sort_keys=True)
-    elif action == 'rotate-domain-key':
+    elif action == 'rotate-domain-keys':
         creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.rotate_domain_key(domain_name, creds)
-    elif action == 'rotate-key-custodian-key':
+    elif action == 'rotate-key-custodian-keys':
         creds = _check_creds(kf, get_creds())
         modified_kf = kf.rotate_key_custodian_key(creds)
     else:
