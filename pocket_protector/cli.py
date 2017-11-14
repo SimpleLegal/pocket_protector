@@ -51,22 +51,33 @@ def get_argparser():
     # TODO: flag for username on the commandline (-u)
     """
     prs = argparse.ArgumentParser()
-    prs.add_argument('--file',
-                     help='the file to pocket protect, defaults to protected.yaml in the working directory')
-    prs.add_argument('--confirm-diff', action='store_true',
-                     help='show diff before modifying the file')
-    prs.add_argument('--non-interactive', action='store_true',
-                     help='disable falling back to user input, useful for automation')
-    subprs = prs.add_subparsers(dest='action')
+    global_args = [{'*': ['--file'],
+                    'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
+                   {'*': ['--confirm-diff'],
+                    'action': 'store_true',
+                    'help': 'show diff before modifying the file'},
+                   {'*': ['--non-interactive'],
+                    'action': 'store_true',
+                    'help': 'disable falling back to user input, useful for automation'}]
 
-    subprs.add_parser('init')
+    subcmds = ['init',
+               'add-key-custodian',
+               'add-domain',
+               'add-owner',
+               'set-secret',
+               'set-key-custodian-passphrase',
+               'decrypt-domain']
+
+    subprs = prs.add_subparsers(dest='action')
     subprs.add_parser('version')
-    subprs.add_parser('add-key-custodian')
-    subprs.add_parser('add-domain')
-    subprs.add_parser('add-owner')
-    subprs.add_parser('set-secret')
-    subprs.add_parser('set-key-custodian-passphrase')
-    subprs.add_parser('decrypt-domain')
+    subprs_map = {}
+
+    for subcmd_name in subcmds:
+        subprs_map[subcmd_name] = subprs.add_parser(subcmd_name)
+        for arg_dict in global_args:
+            arg_dict = dict(arg_dict)
+            args = arg_dict.pop('*')
+            subprs_map[subcmd_name].add_argument(*args, **arg_dict)
 
     return prs
 
@@ -85,7 +96,7 @@ def main(argv=None):
     prs = get_argparser()
     args = prs.parse_args()
     action = args.action
-    file_path = args.file or 'protected.yaml'
+    file_path = getattr(args, 'file', '') or 'protected.yaml'
     file_abs_path = os.path.abspath(file_path)
 
     try:
@@ -108,8 +119,10 @@ def main(argv=None):
             raise
     except KeyboardInterrupt:
         ret = 130
+        print('')
     except EOFError:
         ret = 1
+        print('')
     except PPCLIError as ppce:
         if ppce.args:
             print('; '.join([str(a) for a in ppce.args]))
