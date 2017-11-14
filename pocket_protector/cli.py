@@ -147,7 +147,7 @@ def _main(kf, action, args):
         modified_kf = kf.add_key_custodian(creds)
     elif action == 'add-domain':
         print 'Adding new domain.'
-        creds = check_creds(kf, get_creds())
+        creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.add_domain(domain_name, creds.name)
     elif action == 'set-secret':
@@ -158,7 +158,7 @@ def _main(kf, action, args):
         modified_kf = kf.set_secret(domain_name, secret_name, secret_value)
     elif action == 'add-owner':
         print 'Adding domain owner.'
-        creds = check_creds(kf, get_creds())
+        creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         new_owner_name = raw_input('New owner email: ')
         modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
@@ -166,22 +166,22 @@ def _main(kf, action, args):
         user_id = raw_input('User email: ')
         passphrase = get_pass(confirm_pass=False, label='Current passphrase')
         creds = Creds(user_id, passphrase)
-        check_creds(kf, creds)
+        _check_creds(kf, creds)
         new_passphrase = get_pass(confirm_pass=True,
                                   label='New passphrase',
                                   label2='Retype new passphrase')
         modified_kf = kf.set_key_custodian_passphrase(creds, new_passphrase)
     elif action == 'decrypt-domain':
-        creds = check_creds(kf, get_creds())
+        creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
         print json.dumps(decrypted_dict, indent=2, sort_keys=True)
     elif action == 'rotate-domain-key':
-        creds = check_creds(kf, get_creds())
+        creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.rotate_domain_key(domain_name, creds)
     elif action == 'rotate-key-custodian-key':
-        creds = check_creds(kf, get_creds())
+        creds = _check_creds(kf, get_creds())
         modified_kf = kf.rotate_key_custodian_key(creds)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
@@ -214,7 +214,7 @@ def _get_colorized_lines(lines):
     return ret
 
 
-def check_creds(kf, creds):
+def _check_creds(kf, creds, raise_exc=True):
     if not kf.check_creds(creds):
         msg = 'Invalid user credentials. Check email and passphrase and try again.'
         empty_fields = []
@@ -224,8 +224,10 @@ def check_creds(kf, creds):
             empty_fields.append('passphrase')
         if empty_fields:
             msg += ' Warning: Empty ' + ' and '.join('empty_fields') + '.'
-        sys.exit(1)
-    return creds
+        if raise_exc:
+            raise PPCLIError(msg, 1)
+        return False
+    return True
 
 
 def get_creds(confirm_pass=False):
@@ -245,12 +247,15 @@ def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase')
     return passphrase
 
 
-# Question: is it suitable to use non-interactive user/passphrase when setting/resetting the passphrase?
 def full_get_creds(user=None,
                    interactive=True,
                    check_kf=None,
+                   check_env=True,
                    user_env_var='PPROTECT_USER',
                    pass_env_var='PPROTECT_PASS'):
+    if not interactive and not check_env:
+        raise RuntimeError('expected at least one of check_env'
+                           ' and interactive to be True')
     if not user and user_env_var:
         user = os.getenv(user_env_var)
     if pass_env_var:
@@ -264,16 +269,8 @@ def full_get_creds(user=None,
 
     creds = Creds(user, passphrase)
 
-    if check_kf and not check_kf.check_creds(creds):
-        msg = 'Invalid user credentials. Check email and passphrase and try again.'
-        empty_fields = []
-        if creds.user == '':
-            empty_fields.append('user ID')
-        if creds.passphrase == '':
-            empty_fields.append('passphrase')
-        if empty_fields:
-            msg += ' Warning: Empty ' + ' and '.join('empty_fields') + '.'
-        sys.exit(1)
+    if check_kf:
+        _check_creds(kf, creds)
 
     return creds
 
