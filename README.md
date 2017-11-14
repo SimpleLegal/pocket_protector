@@ -1,3 +1,7 @@
+PocketProtector provides a cryptographicaly strong
+serverless secret management infrastructure.  An applications
+secrets are stored securely right alongside its code.
+
 The theory of operation is that the protected.yaml file
 consists of key-domains at the root level.  Each key-domain
 stores data encrypted by a keypair.  The public key of the
@@ -98,3 +102,19 @@ audit-log:
 - created key custodian alice@example.com
 - bob@example.com added owner alice@example.com to new_domain
 ```
+
+Securing Write Access
+---------------------
+PocketProtector does not provide any security against unauthorized writes
+to the protected.yaml file, by design.  Firstly, without any Public Key Infrastructure,
+PocketProtector is not a good basis for cryptographic signatures.  (An attacker
+that modifies the file could also replace the signing keypair with their own;
+the only way to detect this would be to have a data-store outside of the file.)
+
+Secondly -- and more importantly -- the git or mercurial repository already has
+good controls around write access.  All changes are auditable, authenticated with
+ssh keypairs or user passphrases.  For futher security, consider using signed commits:
+
+https://git-scm.com/book/id/v2/Git-Tools-Signing-Your-Work
+https://help.github.com/articles/signing-commits-using-gpg/
+https://docs.gitlab.com/ee/user/project/repository/gpg_signed_commits/index.html
