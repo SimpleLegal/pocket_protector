@@ -7,6 +7,7 @@ import getpass
 import difflib
 import argparse
 
+from _version import __version__
 from file_keys import KeyFile, Creds
 
 _ANSI_FORE_RED = '\x1b[31m'
@@ -29,8 +30,8 @@ def get_argparser():
     init - done
     add key custodian - done
     add domain - done
-    add owner - done
-    set secret - done
+    grant access - done
+    set secret - done (TODO: split into add/update)
     set key custodian passphrase - done
     remove key custodian - needs backend
     remove domain - needs backend
@@ -45,10 +46,11 @@ def get_argparser():
 
     list domains
     list all keys (with list of domains with the key)
+    list keys accessible by X
 
-    # TODO: flag for not confirming password (for rotation)
     # TODO: flag for username on the commandline (-u)
     # TODO: allow passphrase as envvar
+    # TODO: catch KeyboardInterrupt
     """
     prs = argparse.ArgumentParser()
     prs.add_argument('--file',
@@ -58,6 +60,7 @@ def get_argparser():
     subprs = prs.add_subparsers(dest='action')
 
     subprs.add_parser('init')
+    subprs.add_parser('version')
     subprs.add_parser('add-key-custodian')
     subprs.add_parser('add-domain')
     subprs.add_parser('add-owner')
@@ -76,6 +79,10 @@ def main(argv=None):
     action = kwargs['action']
     file_path = kwargs.get('file') or 'protected.yaml'
     file_abs_path = os.path.abspath(file_path)
+
+    if action == 'version':
+        print('pocket_protector version %s' % __version__)
+        sys.exit(0)
 
     if action == 'init':
         if os.path.exists(file_abs_path):
@@ -204,11 +211,13 @@ def full_get_creds(args=None, env_var_prefix='PPROTECT_'):
 
     user_env_var_name = env_var_prefix + 'USER'
     passphrase_env_var_name = env_var_prefix + 'PASSPHRASE'
-    # warn if set and empty
-    # try and fail with clean error if incorrect
+    # try and fail with clean error if incorrect (with a warning if it's empty)
 
     # finally ask on stdin (but only if not quiet)
 
+    # Failed to read valid PocketProtector passphrase (for user XXX)
+    # from stdin and <passphrase_env_var_name> was not set. (XYZError:
+    # was not set)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv) or 0)
