@@ -18,36 +18,44 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which keys have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
-class SubcommandArgumentParser(argparse.ArgumentParser):
-    def __init__(self, *args, **kw):
-        kw['formatter_class'] = SubcommandHelpFormatter
-        argparse.ArgumentParser.__init__(self, *args, **kw)
-        self._positionals.title = 'Commands'
-        self._optionals.title = 'Options'
-        self.usage = '%(prog)s'
+
+_SUBCMD_MAP = {'init': 'create a new pocket-protected file',
+               'add-key-custodian': 'add a new key custodian to the protected',
+               'add-domain': 'add a new domain to the protected',
+               'add-owner': 'add a key custodian as owner of a domain',
+               'set-secret': '',
+               'set-key-custodian-passphrase': 'change a key custodian passphrase',
+               'decrypt-domain': 'decrypt and display JSON-formatted cleartext for a domain',
+               'rotate-key-custodian-keys': 'rotate the internal keys used to protect key custodian keypairs',
+               'rotate-domain-keys': 'rotate the internal keys for a particular domain (must be owner)'}
 
 
-class SubcommandHelpFormatter(argparse.HelpFormatter):
-    def add_arguments(self, actions):
-        if not actions or not actions[0].choices:
-            super(SubcommandHelpFormatter, self).add_arguments(actions)
-            return
-        new_actions = [argparse.Action((), dest=k, help=v.description)
-                       for k, v in sorted(actions[0].choices.items(), key=lambda i: i[0])]
-        super(SubcommandHelpFormatter, self).add_arguments(new_actions)
+def _format_top_level_help(cmd_map):
+    class SubcommandArgumentParser(argparse.ArgumentParser):
+        def __init__(self, *args, **kw):
+            kw['formatter_class'] = SubcommandHelpFormatter
+            argparse.ArgumentParser.__init__(self, *args, **kw)
+            self._positionals.title = 'Commands'
+            self._optionals.title = 'Options'
+            self.usage = '%(prog)s [COMMANDS]'
 
 
-"""
-def _format_help(cmd_map):
+    class SubcommandHelpFormatter(argparse.HelpFormatter):
+        def add_arguments(self, actions):
+            if not actions or not actions[0].choices:
+                super(SubcommandHelpFormatter, self).add_arguments(actions)
+                return
+            new_actions = [argparse.Action((), dest=k, help=v.description)
+                           for k, v in sorted(actions[0].choices.items(), key=lambda i: i[0])]
+            super(SubcommandHelpFormatter, self).add_arguments(new_actions)
+
     prs = SubcommandArgumentParser(description="")
 
-    subprs = prs.add_subparsers(dest='subcmd')
-    for cmd_name, func in cmd_map.items():
-        cmd_prs = subprs.add_parser(cmd_name, description='')
-        cmd_prs.set_defaults(func=func)
+    subprs = prs.add_subparsers(dest='action')
+    for cmd_name, cmd_desc in cmd_map.items():
+        cmd_prs = subprs.add_parser(cmd_name, description=cmd_desc)
 
     return prs.format_help()
-"""
 
 
 def get_argparser():
@@ -82,7 +90,7 @@ def get_argparser():
 
     # TODO: flag for username on the commandline (-u)
     """
-    prs = SubcommandArgumentParser()
+    prs = argparse.ArgumentParser()
     global_args = [{'*': ['--file'],
                     'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
                    {'*': ['--confirm-diff'],
@@ -92,21 +100,11 @@ def get_argparser():
                     'action': 'store_true',
                     'help': 'disable falling back to user input, useful for automation'}]
 
-    subcmds = ['init',
-               'add-key-custodian',
-               'add-domain',
-               'add-owner',
-               'set-secret',
-               'set-key-custodian-passphrase',
-               'decrypt-domain',
-               'rotate-key-custodian-keys',
-               'rotate-domain-keys']
-
     subprs = prs.add_subparsers(dest='action')
     subprs.add_parser('version')
     subprs_map = {}
 
-    for subcmd_name in subcmds:
+    for subcmd_name in sorted(_SUBCMD_MAP.keys()):
         subprs_map[subcmd_name] = subprs.add_parser(subcmd_name)
         for arg_dict in global_args:
             arg_dict = dict(arg_dict)
@@ -127,6 +125,9 @@ class PPCLIError(Exception):
 
 def main(argv=None):
     argv = argv if argv is not None else sys.argv
+    if (len(argv) > 1 and argv[1] not in _SUBCMD_MAP) and ('-h' in argv or '--help' in argv):
+        print _format_top_level_help(_SUBCMD_MAP)
+        sys.exit(0)
     prs = get_argparser()
     args = prs.parse_args()
     action = args.action
