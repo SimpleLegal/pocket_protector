@@ -7,6 +7,7 @@ import getpass
 import difflib
 import argparse
 
+from _version import __version__
 from file_keys import KeyFile, Creds
 
 _ANSI_FORE_RED = '\x1b[31m'
@@ -29,8 +30,8 @@ def get_argparser():
     init - done
     add key custodian - done
     add domain - done
-    add owner - done
-    set secret - done
+    grant access - done
+    set secret - done (TODO: split into add/update)
     set key custodian passphrase - done
     remove key custodian - needs backend
     remove domain - needs backend
@@ -45,8 +46,8 @@ def get_argparser():
 
     list domains
     list all keys (with list of domains with the key)
+    list keys accessible by X
 
-    # TODO: flag for not confirming password (for rotation)
     # TODO: flag for username on the commandline (-u)
     """
     prs = argparse.ArgumentParser()
@@ -59,6 +60,7 @@ def get_argparser():
     subprs = prs.add_subparsers(dest='action')
 
     subprs.add_parser('init')
+    subprs.add_parser('version')
     subprs.add_parser('add-key-custodian')
     subprs.add_parser('add-domain')
     subprs.add_parser('add-owner')
@@ -88,7 +90,8 @@ def main(argv=None):
 
     try:
         if action == 'version':
-            pass  # TODO
+            print('pocket_protector version %s' % __version__)
+            sys.exit(0)
         elif action == 'init':
             kf = _create_protected(file_abs_path)
         else:
@@ -105,9 +108,11 @@ def main(argv=None):
             raise
     except KeyboardInterrupt:
         ret = 130
+    except EOFError:
+        ret = 1
     except PPCLIError as ppce:
         if ppce.args:
-            print '; '.join([str(a) for a in ppce.args])
+            print('; '.join([str(a) for a in ppce.args]))
         ret = ppce.exit_code
 
     sys.exit(ret)
@@ -134,7 +139,6 @@ def _ensure_protected(path):
 
 def _main(kf, action, args):
     confirm_diff = args.confirm_diff
-
     modified_kf = None
 
     if action == 'init' or action == 'add-key-custodian':
@@ -185,11 +189,10 @@ def _main(kf, action, args):
     if confirm_diff:
         diff_lines = list(difflib.unified_diff(kf.get_contents().splitlines(),
                                                modified_kf.get_contents().splitlines(),
-                                               file_path + '.old', file_path + '.new'))
+                                               kf._path + '.old', kf._path + '.new'))
         diff_lines = _get_colorized_lines(diff_lines)
-        print 'Changes to be written:\n'
-        print '\n'.join(diff_lines)
-        print
+        print('Changes to be written:\n')
+        print('\n'.join(diff_lines) + '\n')
         do_write = raw_input('Write changes? [y/N] ')
         if not do_write.lower().startswith('y'):
             print 'Aborting...'
@@ -274,6 +277,9 @@ def full_get_creds(user=None,
 
     return creds
 
+    # Failed to read valid PocketProtector passphrase (for user XXX)
+    # from stdin and <passphrase_env_var_name> was not set. (XYZError:
+    # was not set)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv) or 0)

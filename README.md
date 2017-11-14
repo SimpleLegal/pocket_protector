@@ -1,3 +1,7 @@
+PocketProtector provides a cryptographicaly strong
+serverless secret management infrastructure.  An applications
+secrets are stored securely right alongside its code.
+
 The theory of operation is that the protected.yaml file
 consists of key-domains at the root level.  Each key-domain
 stores data encrypted by a keypair.  The public key of the
@@ -98,3 +102,54 @@ audit-log:
 - created key custodian alice@example.com
 - bob@example.com added owner alice@example.com to new_domain
 ```
+
+# Design
+
+PocketProtector is a streamlined, human-centric secret management
+system, custom built to work with distributed version control systems.
+
+* PocketProtector is a data protection tool, not a change management
+  tool. While it has convenient affordances like an informal
+  audit_log, PocketProtector is meant to be used in conjunction with
+  your version management tool. Signed commits are a particularly good
+  complement.
+* PocketProtector is designed for single-user usage. This is not a
+  scaling limitation as much as it is a scaling feature. Single-user
+  means that every pprotect command needs at most one credentialed
+  user present. No sideband communication is required, minimizing
+  leakage, while maintaining a system as distributed as your version
+  management.
+
+## Scenarios
+
+Let's say we have a small engineering team, looking to improve their
+secret management. Our team consists of Engineer Alice, Engineer Bob,
+CEO Claire, and CTO Tom.
+
+* Starting
+* Add manager
+* Add domain (environment)
+    * Creator becomes first owner
+* Add a secret
+* Grant access to domain
+* Update your passphrase
+* Removing a custodian (i.e., what to do when someone leaves)
+* Updating or removing secrets
+* Rotations
+
+
+Securing Write Access
+---------------------
+PocketProtector does not provide any security against unauthorized writes
+to the protected.yaml file, by design.  Firstly, without any Public Key Infrastructure,
+PocketProtector is not a good basis for cryptographic signatures.  (An attacker
+that modifies the file could also replace the signing keypair with their own;
+the only way to detect this would be to have a data-store outside of the file.)
+
+Secondly -- and more importantly -- the git or mercurial repository already has
+good controls around write access.  All changes are auditable, authenticated with
+ssh keypairs or user passphrases.  For futher security, consider using signed commits:
+
+* https://git-scm.com/book/id/v2/Git-Tools-Signing-Your-Work
+* https://help.github.com/articles/signing-commits-using-gpg/
+* https://docs.gitlab.com/ee/user/project/repository/gpg_signed_commits/index.html
