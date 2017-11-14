@@ -18,6 +18,38 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which keys have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
+class SubcommandArgumentParser(argparse.ArgumentParser):
+    def __init__(self, *args, **kw):
+        kw['formatter_class'] = SubcommandHelpFormatter
+        argparse.ArgumentParser.__init__(self, *args, **kw)
+        self._positionals.title = 'Commands'
+        self._optionals.title = 'Options'
+        self.usage = '%(prog)s'
+
+
+class SubcommandHelpFormatter(argparse.HelpFormatter):
+    def add_arguments(self, actions):
+        if not actions or not actions[0].choices:
+            super(SubcommandHelpFormatter, self).add_arguments(actions)
+            return
+        new_actions = [argparse.Action((), dest=k, help=v.description)
+                       for k, v in sorted(actions[0].choices.items(), key=lambda i: i[0])]
+        super(SubcommandHelpFormatter, self).add_arguments(new_actions)
+
+
+"""
+def _format_help(cmd_map):
+    prs = SubcommandArgumentParser(description="")
+
+    subprs = prs.add_subparsers(dest='subcmd')
+    for cmd_name, func in cmd_map.items():
+        cmd_prs = subprs.add_parser(cmd_name, description='')
+        cmd_prs.set_defaults(func=func)
+
+    return prs.format_help()
+"""
+
+
 def get_argparser():
     """
     args:
@@ -50,7 +82,7 @@ def get_argparser():
 
     # TODO: flag for username on the commandline (-u)
     """
-    prs = argparse.ArgumentParser()
+    prs = SubcommandArgumentParser()
     global_args = [{'*': ['--file'],
                     'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
                    {'*': ['--confirm-diff'],
