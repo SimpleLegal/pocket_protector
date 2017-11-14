@@ -242,6 +242,7 @@ def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase')
     return passphrase
 
 
+# Question: is it suitable to use non-interactive user/passphrase when setting/resetting the passphrase?
 def full_get_creds(user=None,
                    interactive=True,
                    check_kf=None,
