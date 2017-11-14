@@ -48,13 +48,14 @@ def get_argparser():
 
     # TODO: flag for not confirming password (for rotation)
     # TODO: flag for username on the commandline (-u)
-    # TODO: allow passphrase as envvar
     """
     prs = argparse.ArgumentParser()
     prs.add_argument('--file',
                      help='the file to pocket protect, defaults to protected.yaml in the working directory')
     prs.add_argument('--confirm-diff', action='store_true',
                      help='show diff before modifying the file')
+    prs.add_argument('--non-interactive', action='store_true',
+                     help='disable falling back to user input, useful for automation')
     subprs = prs.add_subparsers(dest='action')
 
     subprs.add_parser('init')
@@ -68,19 +69,43 @@ def get_argparser():
     return prs
 
 
+class PPCLIError(Exception):
+    def __init__(self, msg, exit_code=1):
+        self.msg = msg
+        self.exit_code = exit_code
+
+        super(PPCLIError, self).__init__(msg)
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv
     prs = get_argparser()
+    args = prs.parse_args()
 
-    kwargs = dict(prs.parse_args()._get_kwargs())
-    action = kwargs['action']
-    file_path = kwargs.get('file') or 'protected.yaml'
+    try:
+        ret = _main(args) or 0
+    except KeyboardInterrupt:
+        ret = 130
+    except PPCLIError as ppce:
+        if ppce.args:
+            print '; '.join([str(a) for a in ppce.args])
+        ret = ppce.exit_code
+
+    sys.exit(ret)
+    return
+
+
+def _main(args):
+    action = args.action
+    confirm_diff = args.confirm_diff
+    file_path = args.file or 'protected.yaml'
     file_abs_path = os.path.abspath(file_path)
 
     if action == 'init':
         if os.path.exists(file_abs_path):
-            print('File already exists: %s' % file_abs_path)
-            sys.exit(2)
+            raise PPCLIError('File already exists: %s' % file_abs_path, 2)
+            #print(
+            #sys.exit(2)
         with open(file_abs_path, 'wb') as f:
             f.write('')  # TODO
             # TODO: automatically remove file if init fails
@@ -139,7 +164,7 @@ def main(argv=None):
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
-    if kwargs['confirm_diff']:
+    if confirm_diff:
         diff_lines = list(difflib.unified_diff(kf.get_contents().splitlines(),
                                                modified_kf.get_contents().splitlines(),
                                                file_path + '.old', file_path + '.new'))
@@ -170,7 +195,14 @@ def _get_colorized_lines(lines):
 
 def check_creds(kf, creds):
     if not kf.check_creds(creds):
-        print 'Invalid user credentials. Check email and passphrase and try again.'
+        msg = 'Invalid user credentials. Check email and passphrase and try again.'
+        empty_fields = []
+        if creds.user == '':
+            empty_fields.append('user ID')
+        if creds.passphrase == '':
+            empty_fields.append('passphrase')
+        if empty_fields:
+            msg += ' Warning: Empty ' + ' and '.join('empty_fields') + '.'
         sys.exit(1)
     return creds
 
@@ -192,22 +224,36 @@ def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase')
     return passphrase
 
 
-# TODO: allow separate env vars
-def full_get_creds(args=None, env_var_prefix='PPROTECT_'):
-    # prefer command line
-    # TODO: pick up quiet flag
-    user = None
-    if args:
-        user = getattr(args, 'user')
+def full_get_creds(user=None,
+                   interactive=True,
+                   check_kf=None,
+                   user_env_var='PPROTECT_USER',
+                   pass_env_var='PPROTECT_PASS'):
+    if not user and user_env_var:
+        user = os.getenv(user_env_var)
+    if pass_env_var:
+        passphrase = os.getenv(pass_env_var)
 
-    # then check environment variables
+    if interactive:
+        if user is None:
+            user = raw_input('User email: ')
+        if passphrase is None:
+            passphrase = get_pass(confirm_pass=False)
 
-    user_env_var_name = env_var_prefix + 'USER'
-    passphrase_env_var_name = env_var_prefix + 'PASSPHRASE'
-    # warn if set and empty
-    # try and fail with clean error if incorrect
+    creds = Creds(user, passphrase)
 
-    # finally ask on stdin (but only if not quiet)
+    if check_kf and not check_kf.check_creds(creds):
+        msg = 'Invalid user credentials. Check email and passphrase and try again.'
+        empty_fields = []
+        if creds.user == '':
+            empty_fields.append('user ID')
+        if creds.passphrase == '':
+            empty_fields.append('passphrase')
+        if empty_fields:
+            msg += ' Warning: Empty ' + ' and '.join('empty_fields') + '.'
+        sys.exit(1)
+
+    return creds
 
 
 if __name__ == '__main__':
