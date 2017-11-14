@@ -70,20 +70,39 @@ def get_argparser():
 
 
 class PPCLIError(Exception):
-    def __init__(self, msg, exit_code=1):
+    def __init__(self, msg=None, exit_code=1):
         self.msg = msg
         self.exit_code = exit_code
-
-        super(PPCLIError, self).__init__(msg)
+        if msg:
+            super(PPCLIError, self).__init__(msg)
+        return
 
 
 def main(argv=None):
     argv = argv if argv is not None else sys.argv
     prs = get_argparser()
     args = prs.parse_args()
+    action = args.action
+    file_path = args.file or 'protected.yaml'
+    file_abs_path = os.path.abspath(file_path)
 
     try:
-        ret = _main(args) or 0
+        if action == 'version':
+            pass  # TODO
+        elif action == 'init':
+            kf = _create_protected(file_abs_path)
+        else:
+            kf = _ensure_protected(file_abs_path)
+
+        try:
+            ret = _main(kf, action, args) or 0
+        except:
+            if action == 'init':
+                try:
+                    os.unlink(file_abs_path)
+                except Exception:
+                    print 'Warning: failed to remove file: %s' % file_abs_path
+            raise
     except KeyboardInterrupt:
         ret = 130
     except PPCLIError as ppce:
@@ -95,28 +114,27 @@ def main(argv=None):
     return
 
 
-def _main(args):
-    action = args.action
-    confirm_diff = args.confirm_diff
-    file_path = args.file or 'protected.yaml'
-    file_abs_path = os.path.abspath(file_path)
+def _create_protected(path):
+    if os.path.exists(path):
+        raise PPCLIError('Protected file already exists: %s' % path, 2)
+    open(path, 'wb').close()
+    kf = KeyFile(path=path)
+    # TODO: add audit log entry for creation date
+    # TODO: add audit log dates in general
+    kf.write()
+    return kf
 
-    if action == 'init':
-        if os.path.exists(file_abs_path):
-            raise PPCLIError('File already exists: %s' % file_abs_path, 2)
-            #print(
-            #sys.exit(2)
-        with open(file_abs_path, 'wb') as f:
-            f.write('')  # TODO
-            # TODO: automatically remove file if init fails
-        kf = KeyFile(path=file_abs_path)
-        # TODO: add audit log entry for creation date
-        # TODO: add audit log dates in general
-    else:
-        if not os.path.exists(file_abs_path):
-            print('File not found: %s' % file_path)
-            sys.exit(2)
-        kf = KeyFile.from_file(file_abs_path)
+
+def _ensure_protected(path):
+    if not os.path.exists(path):
+        raise PPCLIError('Protected file not found: %s' % path, 2)
+    kf = KeyFile.from_file(path)
+    return kf
+
+
+def _main(kf, action, args):
+    confirm_diff = args.confirm_diff
+
     modified_kf = None
 
     if action == 'init' or action == 'add-key-custodian':
