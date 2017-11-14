@@ -98,3 +98,37 @@ audit-log:
 - created key custodian alice@example.com
 - bob@example.com added owner alice@example.com to new_domain
 ```
+
+# Design
+
+PocketProtector is a streamlined, human-centric secret management
+system, custom built to work with distributed version control systems.
+
+* PocketProtector is a data protection tool, not a change management
+  tool. While it has convenient affordances like an informal
+  audit_log, PocketProtector is meant to be used in conjunction with
+  your version management tool. Signed commits are a particularly good
+  complement.
+* PocketProtector is designed for single-user usage. This is not a
+  scaling limitation as much as it is a scaling feature. Single-user
+  means that every pprotect command needs at most one credentialed
+  user present. No sideband communication is required, minimizing
+  leakage, while maintaining a system as distributed as your version
+  management.
+
+## Scenarios
+
+Let's say we have a small engineering team, looking to improve their
+secret management. Our team consists of Engineer Alice, Engineer Bob,
+CEO Claire, and CTO Tom.
+
+* Starting
+* Add manager
+* Add domain (environment)
+    * Creator becomes first owner
+* Add a secret
+* Grant access to domain
+* Update your passphrase
+* Removing a custodian (i.e., what to do when someone leaves)
+* Updating or removing secrets
+* Rotations
