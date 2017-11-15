@@ -22,12 +22,12 @@ _ANSI_RESET_ALL = '\x1b[0m'
 _SUBCMD_MAP = {'init': 'create a new pocket-protected file',
                'add-key-custodian': 'add a new key custodian to the protected',
                'add-domain': 'add a new domain to the protected',
-               'rm-domain': 'remove a domain from the protected',  # TODO
+               'rm-domain': 'remove a domain from the protected',
                'add-owner': 'add a key custodian as owner of a domain',
-               'rm-owner': "remove an owner's privileges on a specified domain",  # TODO
-               'add-secret': '',  # TODO
-               'update-secret': '',  # TODO
-               'rm-secret': '',  # TODO
+               'rm-owner': "remove an owner's privileges on a specified domain",
+               'add-secret': 'add a secret to a specified domain',
+               'update-secret': 'update an existing secret in a specified domain',
+               'rm-secret': 'remove a secret from a specified domain',
                'set-key-custodian-passphrase': 'change a key custodian passphrase',
                'decrypt-domain': 'decrypt and display JSON-formatted cleartext for a domain',
                'rotate-key-custodian-keys': 'rotate the internal keys used to protect key custodian keypairs',
@@ -64,29 +64,7 @@ def _format_top_level_help(cmd_map):
 
 def get_argparser():
     """
-    args:
-
-    path to file
-    confirm-diff
-
-    actions:
-
-    init - done
-    add key custodian - done
-    add domain - done
-    grant access - done
-    set secret - done (TODO: split into add/update)
-    set key custodian passphrase - done
-    remove key custodian - needs backend
-    remove domain - needs backend
-    remove owner - needs backend
-    remove secret - needs backend
-    truncate audit log - needs backend
-    rotate key domain keypair - done
-    rotate key custodian keypair - done
-    # both rotations require creds but externally-used creds (passphrases) stay the same
-
-    read-only:
+    TODO: read-only:
 
     list domains
     list all keys (with list of domains with the key)
@@ -102,7 +80,7 @@ def get_argparser():
                     'help': 'show diff before modifying the file'},
                    {'*': ['--non-interactive'],
                     'action': 'store_true',
-                    'help': 'disable falling back to user input, useful for automation'}]
+                    'help': 'disable falling back to interactive authentication, useful for automation'}]
 
     subprs = prs.add_subparsers(dest='action')
     subprs.add_parser('version')
@@ -202,18 +180,38 @@ def _main(kf, action, args):
         creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.add_domain(domain_name, creds.name)
-    elif action == 'set-secret':
-        print 'Setting secret value.'
+    elif action == 'rm-domain':
+        print 'Removing domain.'
         domain_name = raw_input('Domain name: ')
-        secret_name = raw_input('Secret name: ')
-        secret_value = raw_input('Secret value: ')  # TODO: getpass?
-        modified_kf = kf.set_secret(domain_name, secret_name, secret_value)
+        modified_kf = kf.rm_domain(domain_name)
     elif action == 'add-owner':
         print 'Adding domain owner.'
         creds = _check_creds(kf, get_creds())
         domain_name = raw_input('Domain name: ')
         new_owner_name = raw_input('New owner email: ')
         modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
+    elif action == 'rm-owner':
+        print 'Removing domain owner.'
+        domain_name = raw_input('Domain name: ')
+        owner_name = raw_input('Owner email: ')
+        modified_kf = kf.rm_owner(domain_name, owner_name)
+    elif action == 'add-secret':
+        print 'Adding secret value.'
+        domain_name = raw_input('Domain name: ')
+        secret_name = raw_input('Secret name: ')
+        secret_value = raw_input('Secret value: ')
+        modified_kf = kf.add_secret(domain_name, secret_name, secret_value)
+    elif action == 'update-secret':
+        print 'Updating secret value.'
+        domain_name = raw_input('Domain name: ')
+        secret_name = raw_input('Secret name: ')
+        secret_value = raw_input('Secret value: ')
+        modified_kf = kf.update_secret(domain_name, secret_name, secret_value)
+    elif action == 'rm-secret':
+        print 'Removing secret value.'
+        domain_name = raw_input('Domain name: ')
+        secret_name = raw_input('Secret name: ')
+        modified_kf = kf.rm_secret(domain_name, secret_name)
     elif action == 'set-key-custodian-passphrase':
         user_id = raw_input('User email: ')
         passphrase = get_pass(confirm_pass=False, label='Current passphrase')
