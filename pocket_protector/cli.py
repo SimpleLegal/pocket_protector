@@ -18,6 +18,8 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which keys have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
+# TODO: translate all ValueErrors etc. raised from the backend to
+# errors that are caught without displaying a stack trace
 
 _SUBCMD_MAP = {'init': 'create a new pocket-protected file',
                'add-key-custodian': 'add a new key custodian to the protected',
@@ -69,8 +71,6 @@ def get_argparser():
     list domains
     list all keys (with list of domains with the key)
     list keys accessible by X
-
-    # TODO: flag for username on the commandline (-u)
     """
     prs = argparse.ArgumentParser()
     global_args = [{'*': ['--file'],
@@ -174,13 +174,18 @@ def _main(kf, action, args):
     user = args.user
     modified_kf = None
 
+    # TODO
+    interactive = True
+    check_env = True
+    get_creds = lambda: _get_creds(kf, user, interactive=interactive, check_env=check_env)
+
     if action == 'init' or action == 'add-key-custodian':
         print 'Adding new key custodian.'
-        creds = get_creds(confirm_pass=True)
+        creds = _get_new_creds()
         modified_kf = kf.add_key_custodian(creds)
     elif action == 'add-domain':
         print 'Adding new domain.'
-        creds = _check_creds(kf, get_creds())
+        creds = get_creds()
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.add_domain(domain_name, creds.name)
     elif action == 'rm-domain':
@@ -189,7 +194,7 @@ def _main(kf, action, args):
         modified_kf = kf.rm_domain(domain_name)
     elif action == 'add-owner':
         print 'Adding domain owner.'
-        creds = _check_creds(kf, get_creds())
+        creds = get_creds()
         domain_name = raw_input('Domain name: ')
         new_owner_name = raw_input('New owner email: ')
         modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
@@ -217,24 +222,24 @@ def _main(kf, action, args):
         modified_kf = kf.rm_secret(domain_name, secret_name)
     elif action == 'set-key-custodian-passphrase':
         user_id = raw_input('User email: ')
-        passphrase = get_pass(confirm_pass=False, label='Current passphrase')
+        passphrase = _get_pass(confirm_pass=False, label='Current passphrase')
         creds = Creds(user_id, passphrase)
         _check_creds(kf, creds)
-        new_passphrase = get_pass(confirm_pass=True,
+        new_passphrase = _get_pass(confirm_pass=True,
                                   label='New passphrase',
                                   label2='Retype new passphrase')
         modified_kf = kf.set_key_custodian_passphrase(creds, new_passphrase)
     elif action == 'decrypt-domain':
-        creds = _check_creds(kf, get_creds())
+        creds = get_creds()
         domain_name = raw_input('Domain name: ')
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
         print json.dumps(decrypted_dict, indent=2, sort_keys=True)
     elif action == 'rotate-domain-keys':
-        creds = _check_creds(kf, get_creds())
+        creds = get_creds()
         domain_name = raw_input('Domain name: ')
         modified_kf = kf.rotate_domain_key(domain_name, creds)
     elif action == 'rotate-key-custodian-keys':
-        creds = _check_creds(kf, get_creds())
+        creds = get_creds()
         modified_kf = kf.rotate_key_custodian_key(creds)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
@@ -283,14 +288,14 @@ def _check_creds(kf, creds, raise_exc=True):
     return True
 
 
-def get_creds(confirm_pass=False):
+def _get_new_creds(confirm_pass=True):
     user_id = raw_input('User email: ')
-    passphrase = get_pass(confirm_pass=confirm_pass)
+    passphrase = _get_pass(confirm_pass=confirm_pass)
     ret = Creds(user_id, passphrase)
     return ret
 
 
-def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'):
+def _get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'):
     passphrase = getpass.getpass('%s: ' % label)
     if confirm_pass:
         passphrase2 = getpass.getpass('%s: ' % label2)
@@ -300,12 +305,12 @@ def get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase')
     return passphrase
 
 
-def full_get_creds(user=None,
-                   interactive=True,
-                   check_kf=None,
-                   check_env=True,
-                   user_env_var='PPROTECT_USER',
-                   pass_env_var='PPROTECT_PASS'):
+def _get_creds(kf,
+               user=None,
+               interactive=True,
+               check_env=True,
+               user_env_var='PPROTECT_USER',
+               pass_env_var='PPROTECT_PASSPHRASE'):
     if not interactive and not check_env:
         raise RuntimeError('expected at least one of check_env'
                            ' and interactive to be True')
@@ -318,12 +323,10 @@ def full_get_creds(user=None,
         if user is None:
             user = raw_input('User email: ')
         if passphrase is None:
-            passphrase = get_pass(confirm_pass=False)
+            passphrase = _get_pass(confirm_pass=False)
 
     creds = Creds(user, passphrase)
-
-    if check_kf:
-        _check_creds(check_kf, creds)
+    _check_creds(kf, creds)
 
     return creds
 
