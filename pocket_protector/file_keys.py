@@ -459,7 +459,7 @@ class KeyFile(object):
         '''
         Remove an owner from domain.
         (NOTE: due to file history, the removed owner
-        will still be able to get to values untill you rotate
+        will still be able to get to values until you rotate
         the domain keypair, and secret values)
         '''
         return attr.evolve(

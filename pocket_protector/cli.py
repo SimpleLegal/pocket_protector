@@ -22,8 +22,12 @@ _ANSI_RESET_ALL = '\x1b[0m'
 _SUBCMD_MAP = {'init': 'create a new pocket-protected file',
                'add-key-custodian': 'add a new key custodian to the protected',
                'add-domain': 'add a new domain to the protected',
+               'rm-domain': 'remove a domain from the protected',  # TODO
                'add-owner': 'add a key custodian as owner of a domain',
-               'set-secret': '',
+               'rm-owner': "remove an owner's privileges on a specified domain",  # TODO
+               'add-secret': '',  # TODO
+               'update-secret': '',  # TODO
+               'rm-secret': '',  # TODO
                'set-key-custodian-passphrase': 'change a key custodian passphrase',
                'decrypt-domain': 'decrypt and display JSON-formatted cleartext for a domain',
                'rotate-key-custodian-keys': 'rotate the internal keys used to protect key custodian keypairs',
