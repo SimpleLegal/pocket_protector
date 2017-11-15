@@ -80,7 +80,9 @@ def get_argparser():
                     'help': 'show diff before modifying the file'},
                    {'*': ['--non-interactive'],
                     'action': 'store_true',
-                    'help': 'disable falling back to interactive authentication, useful for automation'}]
+                    'help': 'disable falling back to interactive authentication, useful for automation'},
+                   {'*': ['-u', '--user'],
+                    'help': 'the user email, where applicable'}]
 
     subprs = prs.add_subparsers(dest='action')
     subprs.add_parser('version')
@@ -169,6 +171,7 @@ def _ensure_protected(path):
 
 def _main(kf, action, args):
     confirm_diff = args.confirm_diff
+    user = args.user
     modified_kf = None
 
     if action == 'init' or action == 'add-key-custodian':
@@ -268,7 +271,7 @@ def _check_creds(kf, creds, raise_exc=True):
     if not kf.check_creds(creds):
         msg = 'Invalid user credentials. Check email and passphrase and try again.'
         empty_fields = []
-        if creds.user == '':
+        if creds.name == '':
             empty_fields.append('user ID')
         if creds.passphrase == '':
             empty_fields.append('passphrase')
@@ -320,7 +323,7 @@ def full_get_creds(user=None,
     creds = Creds(user, passphrase)
 
     if check_kf:
-        _check_creds(kf, creds)
+        _check_creds(check_kf, creds)
 
     return creds
 
