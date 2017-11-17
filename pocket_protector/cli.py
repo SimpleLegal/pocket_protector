@@ -21,22 +21,56 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # TODO: translate all ValueErrors etc. raised from the backend to
 # errors that are caught without displaying a stack trace
 
-_SUBCMD_MAP = {'init': 'create a new pocket-protected file',
-               'add-key-custodian': 'add a new key custodian to the protected',
-               'add-domain': 'add a new domain to the protected',
-               'rm-domain': 'remove a domain from the protected',
-               'add-owner': 'add a key custodian as owner of a domain',
-               'rm-owner': "remove an owner's privileges on a specified domain",
-               'add-secret': 'add a secret to a specified domain',
-               'update-secret': 'update an existing secret in a specified domain',
-               'rm-secret': 'remove a secret from a specified domain',
-               'set-key-custodian-passphrase': 'change a key custodian passphrase',
-               'decrypt-domain': 'decrypt and display JSON-formatted cleartext for a domain',
-               'rotate-key-custodian-keys': 'rotate the internal keys used to protect key custodian keypairs',
-               'rotate-domain-keys': 'rotate the internal keys for a particular domain (must be owner)'}
+_GLOBAL_ARG_MAP = {'file': {'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
+                   'confirm-diff': {'action': 'store_true', 'help': 'show diff before modifying the file'},
+                   'non-interactive': {'action': 'store_true', 'help': 'disable falling back to interactive authentication, useful for automation'},
+                   'user': {'short_form': 'u', 'help': "the acting user's email credential"}}
 
+_INTERACTIVE_ARGS = ['file', 'confirm-diff', 'user']
+_NON_INTERACTIVE_ARGS = _INTERACTIVE_ARGS + ['non-interactive']
 
-def _format_top_level_help(cmd_map):
+_SUBCMDS = [('init',
+             {'help': 'create a new pocket-protected file',
+              'args': ['file', 'non-interactive', 'user']}),
+            ('add-key-custodian',
+             {'help': 'add a new key custodian to the protected',
+              'args': _INTERACTIVE_ARGS}),
+            ('add-domain',
+             {'help': 'add a new domain to the protected',
+              'args': _INTERACTIVE_ARGS}),
+            ('rm-domain',
+             {'help': 'remove a domain from the protected',
+              'args': _INTERACTIVE_ARGS}),
+            ('add-owner',
+             {'help': 'add a key custodian as owner of a domain',
+              'args': _INTERACTIVE_ARGS}),
+            ('rm-owner',
+             {'help': "remove an owner's privileges on a specified domain",
+              'args': _INTERACTIVE_ARGS}),
+            ('add-secret',
+             {'help': 'add a secret to a specified domain',
+              'args': _INTERACTIVE_ARGS}),
+            ('update-secret',
+             {'help': 'update an existing secret in a specified domain',
+              'args': _INTERACTIVE_ARGS}),
+            ('rm-secret',
+             {'help': 'remove a secret from a specified domain',
+              'args': _INTERACTIVE_ARGS}),
+            ('set-key-custodian-passphrase',
+             {'help': 'change a key custodian passphrase',
+              'args': _INTERACTIVE_ARGS}),
+            ('decrypt-domain',
+             {'help': 'decrypt and display JSON-formatted cleartext for a domain',
+              'args': _NON_INTERACTIVE_ARGS}),
+            ('rotate-key-custodian-keys',
+             {'help': 'rotate the internal keys used to protect key custodian keypairs',
+              'args': _NON_INTERACTIVE_ARGS}),
+            ('rotate-domain-keys',
+             {'help': 'rotate the internal keys for a particular domain (must be owner)',
+              'args': _NON_INTERACTIVE_ARGS})]
+_SUBCMD_SET = set([x[0] for x in _SUBCMDS])
+
+def _format_top_level_help(subcmds):
     class SubcommandArgumentParser(argparse.ArgumentParser):
         def __init__(self, *args, **kw):
             kw['formatter_class'] = SubcommandHelpFormatter
@@ -58,8 +92,8 @@ def _format_top_level_help(cmd_map):
     prs = SubcommandArgumentParser(description="")
 
     subprs = prs.add_subparsers(dest='action')
-    for cmd_name, cmd_desc in cmd_map.items():
-        cmd_prs = subprs.add_parser(cmd_name, description=cmd_desc)
+    for cmd_name, cmd_dict in subcmds:
+        cmd_prs = subprs.add_parser(cmd_name, description=cmd_dict.get('help', ''))
 
     return prs.format_help()
 
@@ -73,27 +107,22 @@ def get_argparser():
     list keys accessible by X
     """
     prs = argparse.ArgumentParser()
-    global_args = [{'*': ['--file'],
-                    'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
-                   {'*': ['--confirm-diff'],
-                    'action': 'store_true',
-                    'help': 'show diff before modifying the file'},
-                   {'*': ['--non-interactive'],
-                    'action': 'store_true',
-                    'help': 'disable falling back to interactive authentication, useful for automation'},
-                   {'*': ['-u', '--user'],
-                    'help': 'the user email, where applicable'}]
 
     subprs = prs.add_subparsers(dest='action')
     subprs.add_parser('version')
     subprs_map = {}
 
-    for subcmd_name in sorted(_SUBCMD_MAP.keys()):
-        subprs_map[subcmd_name] = subprs.add_parser(subcmd_name)
-        for arg_dict in global_args:
-            arg_dict = dict(arg_dict)
-            args = arg_dict.pop('*')
-            subprs_map[subcmd_name].add_argument(*args, **arg_dict)
+    for subcmd_name, subcmd_dict in _SUBCMDS:
+        subprs_map[subcmd_name] = subprs.add_parser(subcmd_name, help='')
+        for arg in subcmd_dict['args']:
+            arg_def = dict(_GLOBAL_ARG_MAP[arg])
+            long_form = arg_def.pop('long_form', arg)
+            short_form = arg_def.pop('short_form', None)
+            a = ['--' + long_form]
+            if short_form:
+                a += ['-' + short_form]
+            kw = arg_def
+            subprs_map[subcmd_name].add_argument(*a, **kw)
 
     return prs
 
@@ -109,8 +138,8 @@ class PPCLIError(Exception):
 
 def main(argv=None):
     argv = argv if argv is not None else sys.argv
-    if (len(argv) > 1 and argv[1] not in _SUBCMD_MAP) and ('-h' in argv or '--help' in argv):
-        print _format_top_level_help(_SUBCMD_MAP)
+    if (len(argv) > 1 and argv[1] not in _SUBCMD_SET) and ('-h' in argv or '--help' in argv):
+        print _format_top_level_help(_SUBCMDS)
         sys.exit(0)
     prs = get_argparser()
     args = prs.parse_args()
@@ -172,10 +201,10 @@ def _ensure_protected(path):
 def _main(kf, action, args):
     confirm_diff = args.confirm_diff
     user = args.user
+    interactive = not args.non_interactive
     modified_kf = None
 
     # TODO
-    interactive = True
     check_env = True
     get_creds = lambda: _get_creds(kf, user, interactive=interactive, check_env=check_env)
 
