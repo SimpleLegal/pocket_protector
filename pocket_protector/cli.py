@@ -142,7 +142,7 @@ def main(argv=None):
         print _format_top_level_help(_SUBCMDS)
         sys.exit(0)
     prs = get_argparser()
-    args = prs.parse_args()
+    args = prs.parse_args(argv[1:])
     action = args.action
     file_path = getattr(args, 'file', '') or 'protected.yaml'
     file_abs_path = os.path.abspath(file_path)
@@ -362,6 +362,3 @@ def _get_creds(kf,
     # Failed to read valid PocketProtector passphrase (for user XXX)
     # from stdin and <passphrase_env_var_name> was not set. (XYZError:
     # was not set)
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv) or 0)
