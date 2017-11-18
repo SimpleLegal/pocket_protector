@@ -22,11 +22,11 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # errors that are caught without displaying a stack trace
 
 _GLOBAL_ARG_MAP = {'file': {'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
-                   'confirm-diff': {'action': 'store_true', 'help': 'show diff before modifying the file'},
+                   'confirm': {'action': 'store_true', 'help': 'show diff before modifying the file'},
                    'non-interactive': {'action': 'store_true', 'help': 'disable falling back to interactive authentication, useful for automation'},
                    'user': {'short_form': 'u', 'help': "the acting user's email credential"}}
 
-_INTERACTIVE_ARGS = ['file', 'confirm-diff', 'user']
+_INTERACTIVE_ARGS = ['file', 'confirm', 'user']
 _NON_INTERACTIVE_ARGS = _INTERACTIVE_ARGS + ['non-interactive']
 
 _SUBCMDS = [('init',
@@ -199,9 +199,9 @@ def _ensure_protected(path):
 
 
 def _main(kf, action, args):
-    confirm_diff = args.confirm_diff
-    user = args.user
-    interactive = not args.non_interactive
+    do_confirm = getattr(args, 'confirm', False)
+    user = getattr(args, 'user', None)
+    interactive = not getattr(args, 'non_interactive', False)
     modified_kf = None
 
     # TODO
@@ -273,7 +273,7 @@ def _main(kf, action, args):
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
-    if confirm_diff:
+    if do_confirm:
         diff_lines = list(difflib.unified_diff(kf.get_contents().splitlines(),
                                                modified_kf.get_contents().splitlines(),
                                                kf._path + '.old', kf._path + '.new'))
