@@ -8,7 +8,7 @@ import difflib
 import argparse
 
 from _version import __version__
-from file_keys import KeyFile, Creds
+from file_keys import KeyFile, Creds, PPError
 
 _ANSI_FORE_RED = '\x1b[31m'
 _ANSI_FORE_GREEN = '\x1b[32m'
@@ -127,7 +127,7 @@ def get_argparser():
     return prs
 
 
-class PPCLIError(Exception):
+class PPCLIError(PPError):
     def __init__(self, msg=None, exit_code=1):
         self.msg = msg
         self.exit_code = exit_code
@@ -146,7 +146,7 @@ def main(argv=None):
     action = args.action
     file_path = getattr(args, 'file', '') or 'protected.yaml'
     file_abs_path = os.path.abspath(file_path)
-
+    ret = 55  # should always be set to something below
     try:
         if action == 'version':
             print('pocket_protector version %s' % __version__)
@@ -157,14 +157,19 @@ def main(argv=None):
             kf = _ensure_protected(file_abs_path)
 
         try:
-            ret = _main(kf, action, args) or 0
-        except:
-            if action == 'init':
-                try:
-                    os.unlink(file_abs_path)
-                except Exception:
-                    print 'Warning: failed to remove file: %s' % file_abs_path
+            try:
+                ret = _main(kf, action, args) or 0
+            except:
+                if action == 'init':
+                    try:
+                        os.unlink(file_abs_path)
+                    except Exception:
+                        print 'Warning: failed to remove file: %s' % file_abs_path
+                raise
+        except PPCLIError:
             raise
+        except PPError as ppe:
+            raise PPCLIError(ppe.args[0])
     except KeyboardInterrupt:
         ret = 130
         print('')
@@ -173,7 +178,7 @@ def main(argv=None):
         print('')
     except PPCLIError as ppce:
         if ppce.args:
-            print('; '.join([str(a) for a in ppce.args]))
+            print('Error: ' + '; '.join([str(a) for a in ppce.args]))
         ret = ppce.exit_code
 
     sys.exit(ret)
