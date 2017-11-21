@@ -67,8 +67,26 @@ _SUBCMDS = [('init',
               'args': _NON_INTERACTIVE_ARGS}),
             ('rotate-domain-keys',
              {'help': 'rotate the internal keys for a particular domain (must be owner)',
-              'args': _NON_INTERACTIVE_ARGS})]
+              'args': _NON_INTERACTIVE_ARGS}),
+
+            # read-only subcommands below
+
+            ('list-domains',
+             {'help': 'display a list of available domains',
+              'args': _INTERACTIVE_ARGS}),
+            ('list-domain-keys',
+             {'help': 'display a list of keys under a specific domain',
+              'args': _INTERACTIVE_ARGS}),
+            ('list-all-keys',
+             {'help': 'display all keys, with a list of domains the key is present in',
+              'args': _INTERACTIVE_ARGS}),
+            ('list-user-keys',
+             {'help': 'similar to list-all-keys, but filtered by a given user',
+              'args': _INTERACTIVE_ARGS})]
+
+
 _SUBCMD_SET = set([x[0] for x in _SUBCMDS])
+
 
 def _format_top_level_help(subcmds):
     class SubcommandArgumentParser(argparse.ArgumentParser):
@@ -99,13 +117,6 @@ def _format_top_level_help(subcmds):
 
 
 def get_argparser():
-    """
-    TODO: read-only:
-
-    list domains
-    list all keys (with list of domains with the key)
-    list keys accessible by X
-    """
     prs = argparse.ArgumentParser()
 
     subprs = prs.add_subparsers(dest='action')
@@ -270,6 +281,12 @@ def _main(kf, action, args):
     elif action == 'rotate-key-custodian-keys':
         creds = get_creds()
         modified_kf = kf.rotate_key_custodian_key(creds)
+    elif action == 'list-domains':
+        domains = kf._domains
+        if domains:
+            print '\n'.join(sorted(domains.keys()))
+        else:
+            print '(No domains in protected at %s)' % kf._path
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
