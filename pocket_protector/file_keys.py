@@ -23,6 +23,14 @@ import ruamel.yaml
 from boltons.fileutils import atomic_save
 
 
+class PPError(Exception):
+    pass
+
+
+class PPKeyError(PPError, KeyError):
+    pass
+
+
 _FILE_SCHEMA = schema.Schema(
 {
     "audit-log": [str],
@@ -70,7 +78,7 @@ def _decode(b64):
     raw = base64.b64decode(b64)
     if raw[0] == '\0':
         return raw[1:]
-    raise ValueError('version {} object not supported')
+    raise PPError('version %s object not supported' % ord(raw))
 
 
 def _encode(raw):
@@ -167,10 +175,6 @@ class _Owner(object):
         return _encode(self._enc_domain_private_key)
 
 
-class PPError(Exception): pass
-class PPKeyError(PPError, KeyError): pass
-
-
 def _err_map_attrib(item_name):
     'utility for giving good error messages'
     class MissingErrDict(dict):
@@ -214,7 +218,7 @@ class _EncryptedKeyDomain(object):
 
     def get_decrypted(self, key_custodian, creds):
         if creds.name not in self._owners:
-            raise ValueError('{} is not an owner of {}'.format(
+            raise PPError('{} is not an owner of {}'.format(
                 creds.name, self._name))
         box = nacl.public.SealedBox(self._decrypt_private_key(
             key_custodian, creds))
@@ -233,7 +237,7 @@ class _EncryptedKeyDomain(object):
     def add_secret(self, name, value):
         'like set_secret, but errors if secret exists'
         if name in self._secrets:
-            raise ValueError('secret {} already exists in {}'.format(
+            raise PPError('secret {} already exists in {}'.format(
                 name, self._name))
         return self.set_secret(name, value)
 
@@ -257,10 +261,10 @@ class _EncryptedKeyDomain(object):
     def rm_owner(self, key_custodian_name):
         'remove owner, checking that domain has at least one user'
         if key_custodian_name not in self._owners:
-            raise ValueError("{} not an owner of {} (owners are {})".format(
+            raise PPError("{} not an owner of {} (owners are {})".format(
                 key_custodian_name, self._name, ", ".join(self._owners)))
         if len(self._owners) == 1:
-            raise ValueError(
+            raise PPError(
                 "cannot delete last owner {} from {} "
                 "(secrets would be irretrievable)".format(key_custodian_name, self._name))
         return attr.evolve(self, owners=_deleted(self._owners, key_custodian_name))
@@ -313,7 +317,7 @@ class _EncryptedKeyDomain(object):
 class _KeyDomain(dict):
     'Represents a decrypted key domain which secrets can be read from'
     def __missing__(self, key):
-        raise KeyError("no secret {} (known secrets are {})".format(
+        raise PPKeyError("no secret {} (known secrets are {})".format(
             key, ", ".join(self)))
 
 
@@ -391,7 +395,7 @@ class KeyFile(object):
         owner who can add other owners
         '''
         if domain_name in self._domains:
-            raise ValueError('tried to add domain that already exists: {}'.format(domain_name))
+            raise PPError('tried to add domain that already exists: {}'.format(domain_name))
         key_custodian = self._key_custodians[key_custodian_name]
         domains = dict(self._domains)
         domains[domain_name] = _EncryptedKeyDomain.from_owner(
@@ -472,7 +476,7 @@ class KeyFile(object):
     def add_key_custodian(self, creds):
         key_custodians = dict(self._key_custodians)
         if creds.name in key_custodians:
-            raise ValueError(
+            raise PPError(
                 'tried to add key custodian that already exists: {}'.format(creds.name))
         key_custodians[creds.name] = _KeyCustodian.from_creds(creds)
         return attr.evolve(
