@@ -74,13 +74,13 @@ _SUBCMDS = [('init',
             ('list-domains',
              {'help': 'display a list of available domains',
               'args': _INTERACTIVE_ARGS}),
-            ('list-domain-keys',
+            ('list-domain-secrets',
              {'help': 'display a list of keys under a specific domain',
               'args': _INTERACTIVE_ARGS}),
-            ('list-all-keys',
+            ('list-all-secrets',
              {'help': 'display all keys, with a list of domains the key is present in',
               'args': _INTERACTIVE_ARGS}),
-            ('list-user-keys',
+            ('list-user-secrets',
              {'help': 'similar to list-all-keys, but filtered by a given user',
               'args': _INTERACTIVE_ARGS})]
 
@@ -287,6 +287,13 @@ def _main(kf, action, args):
             print '\n'.join(sorted(domains.keys()))
         else:
             print '(No domains in protected at %s)' % kf._path
+    elif action == 'list-domain-secrets':
+        domain_name = 'd1'  # TODO
+        domain = kf._domains[domain_name]
+        if domains:
+            print '\n'.join(sorted(domain.keys()))
+        else:
+            print '(No domains in domain %r of protected at %s)' % (domain_name, kf._path)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
