@@ -6,7 +6,6 @@ import json
 import getpass
 import difflib
 import argparse
-from boltons.dictutils import OMD
 
 from _version import __version__
 from file_keys import KeyFile, Creds, PPError
@@ -276,8 +275,8 @@ def _main(kf, action, args):
         creds = Creds(user_id, passphrase)
         _check_creds(kf, creds)
         new_passphrase = _get_pass(confirm_pass=True,
-                                  label='New passphrase',
-                                  label2='Retype new passphrase')
+                                   label='New passphrase',
+                                   label2='Retype new passphrase')
         modified_kf = kf.set_key_custodian_passphrase(creds, new_passphrase)
     elif action == 'decrypt-domain':
         creds = get_creds()
@@ -292,31 +291,25 @@ def _main(kf, action, args):
         creds = get_creds()
         modified_kf = kf.rotate_key_custodian_key(creds)
     elif action == 'list-domains':
-        domains = kf._domains
-        if domains:
-            print '\n'.join(sorted(domains.keys()))
+        domain_names = kf.get_domain_names()
+        if domain_names:
+            print '\n'.join(domain_names)
         else:
-            print '(No domains in protected at %s)' % kf._path
+            print '(No domains in protected at %s)' % kf.path
     elif action == 'list-domain-secrets':
         domain_name = args.domain
-        domain = kf._domains[domain_name]
-        secrets_dict = domain._secrets
-        if secrets_dict:
-            print '\n'.join(sorted(secrets_dict.keys()))
+        secret_names = kf.get_domain_secret_names(domain_name)
+        if secret_names:
+            print '\n'.join(secret_names)
         else:
-            print '(No secrets in domain %r of protected at %s)' % (domain_name, kf._path)
+            print '(No secrets in domain %r of protected at %s)' % (domain_name, kf.path)
     elif action == 'list-all-secrets':
-        res = OMD()
-        for domain_name, domain in kf._domains.items():
-            secrets_dict = domain._secrets
-            for secret_name in secrets_dict:
-                res.add(secret_name, domain_name)
-
-        if not res:
-            print '(No secrets in protected at %s)' % kf._path
+        secrets_map = kf.get_all_secret_names()
+        if not secrets_map:
+            print '(No secrets in protected at %s)' % kf.path
         else:
-            for secret_name in res.sorted():
-                domain_names = sorted(set(res.getlist(secret_name)))
+            for secret_name in sorted(secrets_map):
+                domain_names = sorted(set(secrets_map[secret_name]))
                 print '%s: %s' % (secret_name, ', '.join(domain_names))
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
@@ -324,7 +317,7 @@ def _main(kf, action, args):
     if do_confirm:
         diff_lines = list(difflib.unified_diff(kf.get_contents().splitlines(),
                                                modified_kf.get_contents().splitlines(),
-                                               kf._path + '.old', kf._path + '.new'))
+                                               kf.path + '.old', kf.path + '.new'))
         diff_lines = _get_colorized_lines(diff_lines)
         print('Changes to be written:\n')
         print('\n'.join(diff_lines) + '\n')
@@ -407,6 +400,7 @@ def _get_creds(kf,
 
     return creds
 
+    # TODO: need provenance
     # Failed to read valid PocketProtector passphrase (for user XXX)
     # from stdin and <passphrase_env_var_name> was not set. (XYZError:
     # was not set)

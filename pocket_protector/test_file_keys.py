@@ -11,7 +11,7 @@ def test_file_keys():
 
     _prev = [None]
     def chk(fk):
-        assert fk.from_contents_and_path(fk.get_contents(), fk._path) == fk
+        assert fk.from_contents_and_path(fk.get_contents(), fk.path) == fk
         assert _prev[0] != fk, "function call resulted in no changes to data"
         _prev[0] = fk
 
@@ -54,10 +54,10 @@ def test_file_keys():
     chk(test)
     test12 = test = test.set_key_custodian_passphrase(bob_creds, 'super-extra-secret')
     test.write()
-    round_trip = file_keys.KeyFile.from_file(test._path)
+    round_trip = file_keys.KeyFile.from_file(test.path)
     assert round_trip == test
     print "generated file:"
-    print open(test._path).read()
+    print open(test.path).read()
     print "..."
 
 
@@ -69,4 +69,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         pdb.post_mortem()
- 

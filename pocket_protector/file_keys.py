@@ -20,6 +20,7 @@ import nacl.secret
 import nacl.pwhash
 import schema
 import ruamel.yaml
+from boltons.dictutils import OMD
 from boltons.fileutils import atomic_save
 
 
@@ -340,7 +341,7 @@ class KeyFile(object):
     Represents a key-file (containing many domains)
     Can be read from and written to disk
     '''
-    _path = attr.ib()
+    path = attr.ib()
     _domains = _err_map_attrib('domain')
     _key_custodians = _err_map_attrib('key custodian')
     _log = attr.ib(default=attr.Factory(list))
@@ -369,6 +370,22 @@ class KeyFile(object):
             path=path, domains=encrypted_domains,
             key_custodians=key_custodians, log=log)
 
+    def get_domain_names(self):
+        return sorted(self._domains.keys())
+
+    def get_domain_secret_names(self, domain_name):
+        domain = self._domains[domain_name]
+        return sorted(domain._secrets.keys())
+
+    def get_all_secret_names(self):
+        "return a map of secret names to names of domains that contain that secret"
+        res = OMD()
+        for domain_name, domain in self._domains.items():
+            secrets_dict = domain._secrets
+            for secret_name in secrets_dict:
+                res.add(secret_name, domain_name)
+        return dict(res)
+
     def get_contents(self):
         data = collections.OrderedDict(sorted([
             (domain_name, domain.as_data())
@@ -385,7 +402,7 @@ class KeyFile(object):
     def write(self):  # TODO: need way to get contents.
         'write contents to file'
         contents = self.get_contents()
-        with atomic_save(self._path) as file:
+        with atomic_save(self.path) as file:
             file.write(contents)
         return
 
