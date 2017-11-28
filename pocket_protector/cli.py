@@ -6,6 +6,7 @@ import json
 import getpass
 import difflib
 import argparse
+from boltons.dictutils import OMD
 
 from _version import __version__
 from file_keys import KeyFile, Creds, PPError
@@ -304,6 +305,19 @@ def _main(kf, action, args):
             print '\n'.join(sorted(secrets_dict.keys()))
         else:
             print '(No secrets in domain %r of protected at %s)' % (domain_name, kf._path)
+    elif action == 'list-all-secrets':
+        res = OMD()
+        for domain_name, domain in kf._domains.items():
+            secrets_dict = domain._secrets
+            for secret_name in secrets_dict:
+                res.add(secret_name, domain_name)
+
+        if not res:
+            print '(No secrets in protected at %s)' % kf._path
+        else:
+            for secret_name in res.sorted():
+                domain_names = sorted(set(res.getlist(secret_name)))
+                print '%s: %s' % (secret_name, ', '.join(domain_names))
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
