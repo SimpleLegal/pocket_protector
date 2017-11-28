@@ -21,10 +21,11 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # TODO: translate all ValueErrors etc. raised from the backend to
 # errors that are caught without displaying a stack trace
 
-_GLOBAL_ARG_MAP = {'file': {'help': 'the file to pocket protect, defaults to protected.yaml in the working directory'},
+_GLOBAL_ARG_MAP = {'file': {'help': 'the PocketProtector-managed file, defaults to protected.yaml in the working directory'},
                    'confirm': {'action': 'store_true', 'help': 'show diff before modifying the file'},
                    'non-interactive': {'action': 'store_true', 'help': 'disable falling back to interactive authentication, useful for automation'},
-                   'user': {'short_form': 'u', 'help': "the acting user's email credential"}}
+                   'user': {'short_form': 'u', 'help': "the acting user's email credential"},
+                   'domain': {'positional': True, 'help': 'the name of the domain'}}
 
 _INTERACTIVE_ARGS = ['file', 'confirm', 'user']
 _NON_INTERACTIVE_ARGS = _INTERACTIVE_ARGS + ['non-interactive']
@@ -76,7 +77,7 @@ _SUBCMDS = [('init',
               'args': _INTERACTIVE_ARGS}),
             ('list-domain-secrets',
              {'help': 'display a list of keys under a specific domain',
-              'args': _INTERACTIVE_ARGS}),
+              'args': ['file', 'user', 'domain']}),
             ('list-all-secrets',
              {'help': 'display all keys, with a list of domains the key is present in',
               'args': _INTERACTIVE_ARGS}),
@@ -127,11 +128,14 @@ def get_argparser():
         subprs_map[subcmd_name] = subprs.add_parser(subcmd_name, help='')
         for arg in subcmd_dict['args']:
             arg_def = dict(_GLOBAL_ARG_MAP[arg])
-            long_form = arg_def.pop('long_form', arg)
-            short_form = arg_def.pop('short_form', None)
-            a = ['--' + long_form]
-            if short_form:
-                a += ['-' + short_form]
+            if arg_def.pop('positional', None):
+                a = [arg]
+            else:
+                long_form = arg_def.pop('long_form', arg)
+                short_form = arg_def.pop('short_form', None)
+                a = ['--' + long_form]
+                if short_form:
+                    a += ['-' + short_form]
             kw = arg_def
             subprs_map[subcmd_name].add_argument(*a, **kw)
 
@@ -293,12 +297,13 @@ def _main(kf, action, args):
         else:
             print '(No domains in protected at %s)' % kf._path
     elif action == 'list-domain-secrets':
-        domain_name = 'd1'  # TODO
+        domain_name = args.domain
         domain = kf._domains[domain_name]
-        if domains:
-            print '\n'.join(sorted(domain.keys()))
+        secrets_dict = domain._secrets
+        if secrets_dict:
+            print '\n'.join(sorted(secrets_dict.keys()))
         else:
-            print '(No domains in domain %r of protected at %s)' % (domain_name, kf._path)
+            print '(No secrets in domain %r of protected at %s)' % (domain_name, kf._path)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
