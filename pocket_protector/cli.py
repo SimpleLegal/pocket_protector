@@ -16,7 +16,7 @@ _ANSI_FORE_GREEN = '\x1b[32m'
 _ANSI_RESET_ALL = '\x1b[0m'
 
 # TODO: custodian-signed values. allow custodians to sign values
-# added/set by others, then produced reports on which keys have been
+# added/set by others, then produced reports on which secrets have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
 # TODO: translate all ValueErrors etc. raised from the backend to
@@ -77,13 +77,13 @@ _SUBCMDS = [('init',
              {'help': 'display a list of available domains',
               'args': _INTERACTIVE_ARGS}),
             ('list-domain-secrets',
-             {'help': 'display a list of keys under a specific domain',
+             {'help': 'display a list of secrets under a specific domain',
               'args': ['file', 'user', 'domain']}),
             ('list-all-secrets',
-             {'help': 'display all keys, with a list of domains the key is present in',
+             {'help': 'display all secrets, with a list of domains the key is present in',
               'args': _INTERACTIVE_ARGS}),
             ('list-user-secrets',
-             {'help': 'similar to list-all-keys, but filtered by a given user',
+             {'help': 'similar to list-all-secrets, but filtered by a given user',
               'args': _INTERACTIVE_ARGS})]
 
 
