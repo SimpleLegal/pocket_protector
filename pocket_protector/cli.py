@@ -414,8 +414,3 @@ def _get_creds(kf,
     _check_creds(kf, creds)
 
     return creds
-
-    # TODO: need provenance
-    # Failed to read valid PocketProtector passphrase (for user XXX)
-    # from stdin and <passphrase_env_var_name> was not set. (XYZError:
-    # was not set)
