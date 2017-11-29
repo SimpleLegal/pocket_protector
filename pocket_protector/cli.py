@@ -344,7 +344,13 @@ def _get_colorized_lines(lines):
 
 def _check_creds(kf, creds, raise_exc=True):
     if not kf.check_creds(creds):
-        msg = 'Invalid user credentials. Check email and passphrase and try again.'
+        msg = 'Invalid user email'
+        if creds.name_source:
+            msg += ' (from %s)' % creds.name_source
+        msg += ' or passphrase'
+        if creds.passphrase_source:
+            msg += ' (from %s)' % creds.passphrase_source
+        msg += '. Check credentials and try again.'
         empty_fields = []
         if creds.name == '':
             empty_fields.append('user ID')
@@ -352,6 +358,8 @@ def _check_creds(kf, creds, raise_exc=True):
             empty_fields.append('passphrase')
         if empty_fields:
             msg += ' Warning: Empty ' + ' and '.join('empty_fields') + '.'
+
+
         if raise_exc:
             raise PPCLIError(msg, 1)
         return False
@@ -384,18 +392,25 @@ def _get_creds(kf,
     if not interactive and not check_env:
         raise RuntimeError('expected at least one of check_env'
                            ' and interactive to be True')
+    user_source = 'argument'
+    passphrase_source = None
     if not user and user_env_var:
         user = os.getenv(user_env_var)
+        user_source = 'env var: %s' % user_env_var
     if pass_env_var:
         passphrase = os.getenv(pass_env_var)
+        passphrase_source = 'env var: %s' % pass_env_var
 
     if interactive:
         if user is None:
             user = raw_input('User email: ')
+            user_source = 'stdin'
         if passphrase is None:
             passphrase = _get_pass(confirm_pass=False)
+            passphrase_source = 'stdin'
 
-    creds = Creds(user, passphrase)
+    creds = Creds(user, passphrase,
+                  name_source=user_source, passphrase_source=passphrase_source)
     _check_creds(kf, creds)
 
     return creds

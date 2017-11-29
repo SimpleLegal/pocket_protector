@@ -57,6 +57,13 @@ Creds = attr.make_class('KeyCustodianCreds', ['name', 'passphrase'])
 # credentials that can be entered by a user; associated with
 # NOTE: this is a public class since it must be passed in
 
+@attr.s(frozen=True)
+class Creds(object):
+    name = attr.ib()
+    passphrase = attr.ib()
+    name_source = attr.ib(default=None)
+    passphrase_source = attr.ib(default=None)
+
 
 def _kdf(creds):
     return nacl.pwhash.argon2id.kdf(
