@@ -18,8 +18,6 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which secrets have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
-# TODO: translate all ValueErrors etc. raised from the backend to
-# errors that are caught without displaying a stack trace
 
 _GLOBAL_ARG_MAP = {'file': {'help': 'the PocketProtector-managed file, defaults to protected.yaml in the working directory'},
                    'confirm': {'action': 'store_true', 'help': 'show diff before modifying the file'},
