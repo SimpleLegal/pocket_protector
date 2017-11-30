@@ -12,7 +12,6 @@ try:
 except ImportError:
     from io import StringIO
 
-
 import attr
 import nacl.utils
 import nacl.public
@@ -42,8 +41,8 @@ _FILE_SCHEMA = schema.Schema(
         },
     },
     schema.Optional(schema.Regex("^(?!meta).*$")): {
-    # allow string names for security domains,
-    # but meta is reserved
+        # allow string names for security domains,
+        # but meta is reserved
         "meta": {
             "owners": {str: str},
             "public-key": str,
@@ -53,12 +52,10 @@ _FILE_SCHEMA = schema.Schema(
 })
 
 
-Creds = attr.make_class('KeyCustodianCreds', ['name', 'passphrase'])
-# credentials that can be entered by a user; associated with
 # NOTE: this is a public class since it must be passed in
-
 @attr.s(frozen=True)
 class Creds(object):
+    "Stores credentials used to open a KeyFile"
     name = attr.ib()
     passphrase = attr.ib()
     name_source = attr.ib(default=None)

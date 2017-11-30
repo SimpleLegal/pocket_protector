@@ -7,8 +7,8 @@ import getpass
 import difflib
 import argparse
 
-from _version import __version__
-from file_keys import KeyFile, Creds, PPError
+from ._version import __version__
+from .file_keys import KeyFile, Creds, PPError
 
 _ANSI_FORE_RED = '\x1b[31m'
 _ANSI_FORE_GREEN = '\x1b[32m'
