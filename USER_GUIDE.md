@@ -131,6 +131,47 @@ credentials. Because they were added to the "dev" domain, they were
 safely added by encrypting them with a key accessible only to Tom
 right now.
 
+But how did the secret get secured without requiring an authenticated
+user?
+
+### PocketProtector Secret Storage by Analogy
+
+The best analogy for PocketProtector's internal domain security
+mechanism comes from [the NaCl project](#), on top of which PocketProtector
+is implemented.
+
+Imagine you're a security-conscious community member, holding a letter
+you'd like a select few of your neighbors to read.
+
+You want them to securely read the notarized original, so they can be
+as sure of the authenticity as you are. A copy simply won't
+do. Because we can't make copies of the letter, how do we securely
+ensure only specific neighbors read it?
+
+One elegant solution is to put the letter in your own mailbox, and
+make copies of your mailbox key. Then, put a copy of the key (with
+instructions) into each of the neighbors' mailboxes.
+
+PocketProtector uses a cryptographic approach known as two-key
+encryption to implement this scheme. Every domain is a mailbox, and
+only key custodians assigned to that domain are neighbors with a key
+to that mailbox.
+
+Another advantage of PocketProtector's scheme is that you don't have
+to own the mailbox to put another letter in, just as we saw with our
+[Adding Secrets](#adding-secrets) scenario, above. Domains are
+community mailboxes, where only specific community members have access
+to the contents.
+
+Thus, PocketProtector provides read protection against leaks,
+unintentional or otherwise, while relying on repository management
+practices for write protection. Anyone with push rights to the repo
+can add a key. In our analogy, only people in the building can drop
+letters in the mailbox, but it's up to your team to control who can
+get into the building.
+
+## TODO
+
 One of PocketProtector's biggest features is its distributed
 design. Any action performed with PocketProtector only requires one
 set of credentials, if it requires credentials at all. This enables
