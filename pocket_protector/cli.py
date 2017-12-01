@@ -81,7 +81,9 @@ _SUBCMDS = [('init',
               'args': _INTERACTIVE_ARGS}),
             ('list-user-secrets',
              {'help': 'similar to list-all-secrets, but filtered by a given user',
-              'args': _INTERACTIVE_ARGS})]
+              'args': _INTERACTIVE_ARGS}),
+            ('list-audit-log',
+             {'help': 'display a chronological list of audit log entries representing file activity'})]
 
 
 _SUBCMD_SET = set([x[0] for x in _SUBCMDS])
@@ -124,7 +126,7 @@ def get_argparser():
 
     for subcmd_name, subcmd_dict in _SUBCMDS:
         subprs_map[subcmd_name] = subprs.add_parser(subcmd_name, help='')
-        for arg in subcmd_dict['args']:
+        for arg in subcmd_dict.get('args', []):
             arg_def = dict(_GLOBAL_ARG_MAP[arg])
             if arg_def.pop('positional', None):
                 a = [arg]
@@ -309,6 +311,9 @@ def _main(kf, action, args):
             for secret_name in sorted(secrets_map):
                 domain_names = sorted(set(secrets_map[secret_name]))
                 print '%s: %s' % (secret_name, ', '.join(domain_names))
+    elif action == 'list-audit-log':
+        log_list = kf.get_audit_log()
+        print '\n'.join(log_list)
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 

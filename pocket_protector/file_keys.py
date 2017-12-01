@@ -403,6 +403,9 @@ class KeyFile(object):
         text = stream.getvalue()
         return text
 
+    def get_audit_log(self):
+        return list(self._log)
+
     def write(self):  # TODO: need way to get contents.
         'write contents to file'
         contents = self.get_contents()
