@@ -1,6 +1,6 @@
 # PocketProtector User Guide
 
-PocketProtector is a streamlined, human-centric secret management
+PocketProtector is a streamlined, people-centric secret management
 system, built to work with modern distributed version control systems.
 
 This guide will walk you through security scenarios commonly faced by
