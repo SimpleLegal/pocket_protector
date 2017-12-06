@@ -168,7 +168,127 @@ unintentional or otherwise, while relying on repository management
 practices for write protection. Anyone with push rights to the repo
 can add a key. In our analogy, only people in the building can drop
 letters in the mailbox, but it's up to your team to control who can
-get into the building.
+get into the building (i.e., push to your repo).
+
+Speaking of reads, let's check in on our scenario using some
+PocketProtector's read subcommands.
+
+## Reading a Protected
+
+The first thing to recognize about protected files is that they are
+designed for some degree of human readability. They are plaintext YAML
+files that you can open in your editor of choice. You should see
+something like this:
+
+```
+dev:
+  secret-chat-api-key: AHjJzxmel+dWrLD7p8ertxnEOzOvm9UsaW2c60qH6OlEkpbOuC/3HlfdVG2aYoGl91sKQ6b7XG03ceVS
+  meta:
+    public-key: ANO5xKMEyKcDKFn0veQqL/iJ9xrQ7Dbw5BEqXJL5sHlN
+    owners:
+      tom@example.com: ACEP49ocfKSxF3bDhUJX3L+lezy8uy5MqR/+oI/Gdf88Zclw5FU0kuNOexXH7+yTPXr5a6HBzfIGzoQOP0Myj9d68uYZVh4p6ooxqEIABKc5
+key-custodians:
+  tom@example.com:
+    encrypted-private-key: AFUsvKnd/KgHaBpBOrjeUYGLQWN7XGD8NBtFvw+bNh1Soli3psRX4/dmV5lKOEEZcJn6X25rlfgt9xUYqHWVl6Pxvpl2GEVeBA==
+    public-key: AFsz1p73HOZNjOKBUYoLnnO34iylATWOuqe+XDY9w4w6
+audit-log:
+- created key custodian tom@example.com
+- created domain dev with owner tom@example.com
+- added secret chat-api-key in dev
+```
+
+All of the state PocketProtector needs to operate is included in this
+file. Several of the text values should be recognizable from our
+scenario above.
+
+But there are more convenient ways to get access to the values
+designed for external consumption. Let's take a look, with a file
+that's had a couple more values added to it.
+
+### Listing available domains
+
+The first way to get acquainted with a protected is to list the
+domains within the file.
+
+```
+$ pprotect list-domains
+dev
+prod
+```
+
+As we can see, Tom has added a `prod` domain in addition to the `dev`
+one we created above. Many projects need to function in multiple
+environments, and PocketProtector's domains are a natural way to
+segment the different secrets used in each environment.
+
+### Listing secrets within a given domain
+
+If we know which domain we want to inspect, we can list its secrets
+like so:
+
+```
+$ pprotect list-domain-secrets dev
+chat-api-key
+mail-api-key
+```
+
+It seems Tom has recently added a new key for mail integration, in
+addition to the chat key we added above.
+
+But just because a key is in one domain, doesn't mean it has to be in
+all of them. Let's get an overview.
+
+### Listing all secrets in a protected
+
+Because domains can overlap and also diverge, it can be very useful to
+get an overview of all the secrets contained in a protected. The
+`list-all-secrets` subcommand gives a sorted list with each secret,
+followed by a colon and a comma-separated list of domains that contain
+that secret, like so:
+
+```
+$ pprotect list-all-secrets
+chat-api-key: dev
+mail-api-key: dev, prod
+```
+
+As we can see, that mail integration key is actually present for both
+`dev` and `prod` domains, so Tom may have rush deployed that
+integration already.
+
+The actual values for these secrets may or may not be the same. In
+practice none of them should be, but even if they were, inspecting the
+file would not give any indication, because internally different
+encryption keys are used for each domain.
+
+### Listing activity on the protected file
+
+So far we've focused on protected domains and secrets, but
+PocketProtector also builds in one very useful metadata feature: The
+audit log.
+
+The audit log keeps a human readable list of operations performed on
+the protected. You can see this in our full-text example above, but
+you can also access it from the command line, one entry per line:
+
+```
+$ pprotect list-audit-log
+created key custodian tom@example.com
+created domain dev with owner tom@example.com
+added secret chat-api-key in dev
+created domain prod with owner tom@example.com
+added secret mail-api-key in dev
+added secret mail-api-key in prod
+```
+
+And here we can see how it all went down. It's far from complete, but
+it's a pretty good summary that should be used in conjunction with
+your source control management tools. Using `git` as an example, `git
+log protected.yaml` and `git blame protected.yaml` are both excellent
+complements to the audit log.
+
+The audit log is also completely supplementary. It can safely be
+truncated without affecting any other PocketProtector functionality.
 
 ## TODO
 
