@@ -18,14 +18,16 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which secrets have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
+# TODO: passphrase file (for integration with other secret management systems)
 
-_GLOBAL_ARG_MAP = {'file': {'help': 'the PocketProtector-managed file, defaults to protected.yaml in the working directory'},
+_GLOBAL_ARG_MAP = {'file': {'help': 'path to the PocketProtector-managed file, defaults to protected.yaml in the working directory'},
                    'confirm': {'action': 'store_true', 'help': 'show diff before modifying the file'},
                    'non-interactive': {'action': 'store_true', 'help': 'disable falling back to interactive authentication, useful for automation'},
                    'user': {'short_form': 'u', 'help': "the acting user's email credential"},
-                   'domain': {'positional': True, 'help': 'the name of the domain'}}
+                   'domain': {'positional': True, 'help': 'the name of the domain'},
+                   'passphrase-file': {'help': 'path to a file containing only the passphrase, likely provided by a deployment system'}}
 
-_INTERACTIVE_ARGS = ['file', 'confirm', 'user']
+_INTERACTIVE_ARGS = ['file', 'confirm', 'user', 'passphrase-file']
 _NON_INTERACTIVE_ARGS = _INTERACTIVE_ARGS + ['non-interactive']
 
 _SUBCMDS = [('init',
@@ -222,11 +224,15 @@ def _main(kf, action, args):
     do_confirm = getattr(args, 'confirm', False)
     user = getattr(args, 'user', None)
     interactive = not getattr(args, 'non_interactive', False)
+    passphrase_file_path = getattr(args, 'passphrase_file', None)
     modified_kf = None
 
     # TODO
     check_env = True
-    get_creds = lambda: _get_creds(kf, user, interactive=interactive, check_env=check_env)
+    get_creds = lambda: _get_creds(kf, user,
+                                   check_env=check_env,
+                                   interactive=interactive,
+                                   passphrase_file=passphrase_file_path)
 
     if action == 'init' or action == 'add-key-custodian':
         print 'Adding new key custodian.'
@@ -360,7 +366,7 @@ def _check_creds(kf, creds, raise_exc=True):
         if creds.passphrase == '':
             empty_fields.append('passphrase')
         if empty_fields:
-            msg += ' Warning: Empty ' + ' and '.join('empty_fields') + '.'
+            msg += ' (Warning: Empty ' + ' and '.join(empty_fields) + '.)'
 
 
         if raise_exc:
@@ -390,17 +396,30 @@ def _get_creds(kf,
                user=None,
                interactive=True,
                check_env=True,
+               passphrase_file=None,
                user_env_var='PPROTECT_USER',
                pass_env_var='PPROTECT_PASSPHRASE'):
     if not interactive and not check_env:
         raise RuntimeError('expected at least one of check_env'
                            ' and interactive to be True')
     user_source = 'argument'
-    passphrase_source = None
-    if not user and user_env_var:
+    passphrase, passphrase_source = None, None
+    if passphrase_file:
+        passphrase_file = os.path.abspath(passphrase_file)
+        try:
+            passphrase = open(passphrase_file, 'rb').read()
+        except IOError as ioe:
+            if getattr(ioe, 'strerror', None):
+                msg = '%s while reading passphrase from file at "%s"' % (ioe.strerror, passphrase_file)
+            else:
+                msg = 'Failed to read passphrase from file at "%s"' % passphrase_file
+            raise PPCLIError(msg=msg)
+        else:
+            passphrase_source = "passphrase file: %s" % passphrase_file
+    if user is None and user_env_var:
         user = os.getenv(user_env_var)
         user_source = 'env var: %s' % user_env_var
-    if pass_env_var:
+    if passphrase is None and pass_env_var:
         passphrase = os.getenv(pass_env_var)
         passphrase_source = 'env var: %s' % pass_env_var
 
