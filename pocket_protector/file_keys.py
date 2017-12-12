@@ -112,10 +112,7 @@ class _KeyCustodian(object):
     @classmethod
     def from_creds(cls, creds):
         'create a new user based on new credentials'
-        private_key = nacl.public.PrivateKey.generate()
-        derived_key = _kdf(creds)
-        encrypted_private_key = nacl.secret.SecretBox(
-            derived_key).encrypt(private_key.encode())
+        private_key = nacl.public.PrivateKey(_kdf(creds))
         return cls(
             name=creds.name, public_key=private_key.public_key)
 
