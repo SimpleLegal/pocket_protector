@@ -4,6 +4,7 @@ protected.yaml, which stores secret data securely.
 
 There are two public classes: KeyFile, and Creds.
 '''
+import os
 import base64
 import collections
 import hashlib
@@ -36,7 +37,7 @@ _FILE_SCHEMA = schema.Schema(
     "audit-log": [str],
     "key-custodians": {
         schema.Optional(str): {
-            "public-key": str,
+            "pwdkm": str,
         },
     },
     schema.Optional(schema.Regex("^(?!meta).*$")): {
@@ -61,10 +62,10 @@ class Creds(object):
     passphrase_source = attr.ib(default=None)
 
 
-def _kdf(creds):
+def _kdf(creds, salt):
     return nacl.pwhash.argon2id.kdf(
         nacl.public.PrivateKey.SIZE,
-        creds.passphrase, hashlib.sha512(creds.name).digest()[:16],
+        creds.passphrase, hashlib.sha512(creds.name + salt).digest()[:16],
         opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
         memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
 
@@ -98,6 +99,7 @@ class _KeyCustodian(object):
     '''
     name = attr.ib()
     _public_key = attr.ib()
+    _salt = attr.ib()
 
     def encrypt_for(self, bytes):
         'encrypt the passed bytes so that this key-custodian can decrypt'
@@ -107,26 +109,27 @@ class _KeyCustodian(object):
         'decrypt the passed bytes that were encrypted for this key-custodian'
         assert creds.name == self.name
         return nacl.public.SealedBox(
-            nacl.public.PrivateKey(_kdf(creds))).decrypt(bytes)
+            nacl.public.PrivateKey(_kdf(creds, self._salt))).decrypt(bytes)
 
     @classmethod
     def from_creds(cls, creds):
         'create a new user based on new credentials'
-        private_key = nacl.public.PrivateKey(_kdf(creds))
+        salt = os.urandom(8)
+        private_key = nacl.public.PrivateKey(_kdf(creds, salt))
         return cls(
-            name=creds.name, public_key=private_key.public_key)
+            name=creds.name, public_key=private_key.public_key, salt=salt)
 
     @classmethod
     def from_data(cls, name, data):
+        # password derived key material
+        pwdkm = _decode(data['pwdkm'])
+        salt, public_key = pwdkm[:8], pwdkm[8:8 + nacl.public.PublicKey.SIZE]
         return cls(
-            name=name,
-            public_key=nacl.public.PublicKey(
-                _decode(data['public-key'])),
-        )
+            name=name, public_key=nacl.public.PublicKey(public_key), salt=salt)
 
     def as_data(self):
         return {
-            'public-key': _encode(self._public_key.encode()),
+            'pwdkm': _encode(self._salt + self._public_key.encode()),
         }
 
 
