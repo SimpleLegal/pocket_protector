@@ -63,9 +63,12 @@ class Creds(object):
 
 
 def _kdf(creds, salt):
+    valet_key = hashlib.sha512(creds.passphrase + salt + creds.name).digest()
+    # valet key can be used to share credentials
+    # without exposing password
     return nacl.pwhash.argon2id.kdf(
         nacl.public.PrivateKey.SIZE,
-        creds.passphrase, hashlib.sha512(creds.name + salt).digest()[:16],
+        valet_key, hashlib.sha512(salt + creds.name).digest()[:16],
         opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
         memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
 
