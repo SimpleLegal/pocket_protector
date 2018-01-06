@@ -4,6 +4,7 @@ protected.yaml, which stores secret data securely.
 
 There are two public classes: KeyFile, and Creds.
 '''
+import os
 import base64
 import collections
 import hashlib
@@ -36,8 +37,7 @@ _FILE_SCHEMA = schema.Schema(
     "audit-log": [str],
     "key-custodians": {
         schema.Optional(str): {
-            "public-key": str,
-            "encrypted-private-key": str,
+            "pwdkm": str,
         },
     },
     schema.Optional(schema.Regex("^(?!meta).*$")): {
@@ -62,10 +62,10 @@ class Creds(object):
     passphrase_source = attr.ib(default=None)
 
 
-def _kdf(creds):
+def _kdf(creds, salt):
     return nacl.pwhash.argon2id.kdf(
-        nacl.secret.SecretBox.KEY_SIZE,
-        creds.passphrase, hashlib.sha512(creds.name).digest()[:16],
+        nacl.public.PrivateKey.SIZE,
+        creds.passphrase, hashlib.sha512(creds.name + salt).digest()[:16],
         opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
         memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
 
@@ -99,7 +99,7 @@ class _KeyCustodian(object):
     '''
     name = attr.ib()
     _public_key = attr.ib()
-    _enc_custodian_private_key = attr.ib()
+    _salt = attr.ib()
 
     def encrypt_for(self, bytes):
         'encrypt the passed bytes so that this key-custodian can decrypt'
@@ -108,49 +108,28 @@ class _KeyCustodian(object):
     def decrypt_as(self, creds, bytes):
         'decrypt the passed bytes that were encrypted for this key-custodian'
         assert creds.name == self.name
-        derived_key = _kdf(creds)
-        return nacl.public.SealedBox(nacl.public.PrivateKey(
-            nacl.secret.SecretBox(derived_key).decrypt(
-                self._enc_custodian_private_key))).decrypt(bytes)
-
-    def set_passphrase(self, creds, new_passphrase):
-        'return a copy with an updated passphrase'
-        assert creds.name == self.name
-        derived_key = _kdf(creds)
-        private_key_bytes = nacl.secret.SecretBox(
-            derived_key).decrypt(self._enc_custodian_private_key)
-        new_derived_key = _kdf(Creds(self.name, new_passphrase))
-        new_enc_priv_key_bytes = nacl.secret.SecretBox(
-            new_derived_key).encrypt(private_key_bytes)
-        return attr.evolve(
-            self, enc_custodian_private_key=new_enc_priv_key_bytes)
+        return nacl.public.SealedBox(
+            nacl.public.PrivateKey(_kdf(creds, self._salt))).decrypt(bytes)
 
     @classmethod
     def from_creds(cls, creds):
         'create a new user based on new credentials'
-        private_key = nacl.public.PrivateKey.generate()
-        derived_key = _kdf(creds)
-        encrypted_private_key = nacl.secret.SecretBox(
-            derived_key).encrypt(private_key.encode())
+        salt = os.urandom(8)
+        private_key = nacl.public.PrivateKey(_kdf(creds, salt))
         return cls(
-            name=creds.name, public_key=private_key.public_key,
-            enc_custodian_private_key=encrypted_private_key)
+            name=creds.name, public_key=private_key.public_key, salt=salt)
 
     @classmethod
     def from_data(cls, name, data):
+        # password derived key material
+        pwdkm = _decode(data['pwdkm'])
+        salt, public_key = pwdkm[:8], pwdkm[8:8 + nacl.public.PublicKey.SIZE]
         return cls(
-            name=name,
-            public_key=nacl.public.PublicKey(
-                _decode(data['public-key'])),
-            enc_custodian_private_key=_decode(
-                data['encrypted-private-key']),
-        )
+            name=name, public_key=nacl.public.PublicKey(public_key), salt=salt)
 
     def as_data(self):
         return {
-            'public-key': _encode(self._public_key.encode()),
-            'encrypted-private-key':
-                _encode(self._enc_custodian_private_key),
+            'pwdkm': _encode(self._salt + self._public_key.encode()),
         }
 
 
@@ -527,14 +506,23 @@ class KeyFile(object):
             self._key_custodians[creds.name], creds)
 
     def set_key_custodian_passphrase(self, creds, new_passphrase):
-        key_custodian = self._key_custodians[creds.name]
+        new_kc = _KeyCustodian.from_creds(Creds(creds.name, new_passphrase))
+        cur_kc = self._key_custodians[creds.name]
         key_custodians = dict(self._key_custodians)
-        key_custodians[creds.name] = key_custodian.set_passphrase(
-            creds, new_passphrase)
+        key_custodians[creds.name] = new_kc
+        domains = dict(self._domains)
+        updated = []
+        for name, domain in domains.items():
+            if creds.name in domain.get_owner_names():
+                domains[name] = self._domains[name].add_owner(
+                    cur_creds=creds, cur_key_custodian=cur_kc,
+                    new_key_custodian=new_kc)
+                updated.append(name)
         return attr.evolve(
-            self, key_custodians=key_custodians,
+            self, key_custodians=key_custodians, domains=domains,
             log=self._log + [
-                'updated key custodian passphrase for {}'.format(creds.name)])
+                'updated key custodian passphrase for {} (updated domains -- {})'.format(
+                    creds.name, ", ".join(updated))])
 
     def check_creds(self, creds):
         try:
@@ -547,34 +535,13 @@ class KeyFile(object):
             return False
         return True
 
-    def rotate_key_custodian_key(self, creds):
+    def rotate_domain_key(self, domain_name, creds):
         '''
-        rotate the key custodian keypair
+        rotate the keypair used to secure a domain
         NIST recommends keys be rotated and not kept in use for more than ~1-3 years
         see http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf
         Recommendation for Key Management, Part 1: General
         section 5.3.6 Cryptoperiod Recommendations for Specific Key Types
-        '''
-        new_kc = _KeyCustodian.from_creds(creds)
-        cur_kc = self._key_custodians[creds.name]
-        domains = dict(self._domains)
-        updated = []
-        for name, domain in domains.items():
-            if creds.name in domain.get_owner_names():
-                domains[name] = self._domains[name].add_owner(
-                    cur_creds=creds, cur_key_custodian=cur_kc,
-                    new_key_custodian=new_kc)
-                updated.append(name)
-        key_custodians = dict(self._key_custodians)
-        key_custodians[creds.name] = new_kc
-        return attr.evolve(
-            self, key_custodians=key_custodians, domains=domains,
-            log=self._log + ['rotated key for custodian {} (updated domains -- {})'.format(
-                creds.name, ", ".join(updated))])
-
-    def rotate_domain_key(self, domain_name, creds):
-        '''
-        rotate the keypair used to secure a domain
         '''
         cur_domain = self._domains[domain_name]
         key_custodian = self._key_custodians[creds.name]
