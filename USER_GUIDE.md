@@ -290,6 +290,7 @@ complements to the audit log.
 The audit log is also completely supplementary. It can safely be
 truncated without affecting any other PocketProtector functionality.
 
+<!--
 ## TODO
 
 One of PocketProtector's biggest features is its distributed
@@ -298,11 +299,24 @@ set of credentials, if it requires credentials at all. This enables
 teams, local and remote, to securely share keys without requiring side
 channels. We'll see more of this in the sections ahead.
 
-<!--
+
 
 * link key custodian
 * link "yaml"
 * talk about blame
 
+Steps:
+
+* Starting
+* Add manager
+* Add domain (environment)
+    * Creator becomes first owner
+* Add a secret
+* Grant access to domain
+* Update your passphrase
+* Removing a custodian (i.e., what to do when someone leaves)
+* Updating or removing secrets
+* Rotations
+
+
 -->
-## FAQ
