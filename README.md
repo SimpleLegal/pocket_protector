@@ -60,6 +60,29 @@ When you're done updating the secret store, simply `git commit` (or
 equivalent) to save your changes. Should you make any mistakes, use
 your VCS to revert the changes.
 
+### Passing credentials
+
+By default, the `pocket_protector` command prompts you for credentials
+when necessary. But convenience and automation both demand more
+options, highlighted here:
+
+* Command-line Flags
+    * `-u / --user USER_EMAIL` - specifies the user email for subcommands which require it
+    * `--passphrase-file PATH` - specifies a path to a readable file
+      which contains the passphrase (useful for mount-based key
+      management, like Docker)
+    * `--domain DOMAIN` - specifies the name of the domain
+    * `--non-interactive` - causes the command to fail when credentials cannot be gotten by other means
+
+* Environment variables
+   * `PPROTECT_USER` - environment variable which contains the user email
+   * `PPROTECT_PASSPHRASE` - environment variable which contains the
+     passphrase (useful for environment variable-based key management,
+     used by AWS/Heroku/many CI systems)
+
+See [our User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
+for more usage tips.
+
 ### Command summary
 
 Here is a summary of all commands:
