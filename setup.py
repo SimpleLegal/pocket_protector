@@ -6,6 +6,7 @@ from setuptools import setup, find_packages
 __author__ = "Kurt Rose and Mahmoud Hashemi"
 __contact__ = "kurt@kurtrose.com"
 __license__ = 'Apache License 2.0'
+__url__ = 'https://github.com/SimpleLegal/pocket_protector'
 
 CUR_PATH = os.path.abspath(os.path.dirname(__file__))
 _version_mod_path = os.path.join(CUR_PATH, 'pocket_protector', '_version.py')
@@ -17,6 +18,7 @@ setup(
     description="Handy secret management system with a convenient CLI and readable storage format.",
     author=__author__,
     author_email=__contact__,
+    url=__url__,
     license=__license__,
     platforms='any',
     version=__version__,
