@@ -1,8 +1,20 @@
 # Pocket Protector
 
 PocketProtector provides a cryptographically-strong, serverless secret
-management infrastructure.  An application's secrets are versioned in
-a secure store, right alongside its code.
+management infrastructure. PocketProtector enables "key management as
+code", securely storing an application's secrets in a versionable
+format, right alongside its code.
+
+PocketProtector's approach lets you:
+
+* Leverage existing user, versioning, and backup systems, with no
+  infrastructure to set up
+* Support multiple environments
+* Integrate easily with existing key management systems
+  (AWS/Heroku/TravisCI)
+* Minimizes the number of passphrases and keys your team has to
+  remember and secure
+* Beats the heck out of hardcoded plaintext secrets!!
 
 ## Installation
 
