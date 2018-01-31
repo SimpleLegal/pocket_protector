@@ -80,6 +80,11 @@ options, highlighted here:
      passphrase (useful for environment variable-based key management,
      used by AWS/Heroku/many CI systems)
 
+In all cases, flags take precedence over environment variables, and
+both take precedence over and bypass interactive prompts. In the event
+an incorrect credential is passed, pocket_protector does *not*
+automatically check other sources.
+
 See [our User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
 for more usage tips.
 
