@@ -60,7 +60,7 @@ _SUBCMDS = [('init',
               'args': _INTERACTIVE_ARGS}),
             ('decrypt-domain',
              {'help': 'decrypt and display JSON-formatted cleartext for a domain',
-              'args': _NON_INTERACTIVE_ARGS}),
+              'args': _NON_INTERACTIVE_ARGS + ['domain']}),
             ('rotate-domain-keys',
              {'help': 'rotate the internal keys for a particular domain (must be owner)',
               'args': _NON_INTERACTIVE_ARGS}),
@@ -281,7 +281,7 @@ def _main(kf, action, args):
         modified_kf = kf.set_key_custodian_passphrase(creds, new_passphrase)
     elif action == 'decrypt-domain':
         creds = get_creds()
-        domain_name = raw_input('Domain name: ')
+        domain_name = args.domain
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
         print json.dumps(decrypted_dict, indent=2, sort_keys=True)
     elif action == 'rotate-domain-keys':
