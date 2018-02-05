@@ -38,12 +38,11 @@ setup(
 """
 Release process:
 
-* tox
+* tox  # TODO
 * git commit (if applicable)
 * Remove dev suffix from pocket_protector/_version.py version
 * git commit -a -m "bump version for vX.Y.Z release"
 * python setup.py sdist bdist_wheel upload
-* git commit
 * git tag -a vX.Y.Z -m "brief summary"
 * write CHANGELOG
 * git commit
