@@ -5,6 +5,7 @@ protected.yaml, which stores secret data securely.
 There are two public classes: KeyFile, and Creds.
 '''
 import os
+import re
 import base64
 import collections
 import hashlib
@@ -22,6 +23,9 @@ import schema
 import ruamel.yaml
 from boltons.dictutils import OMD
 from boltons.fileutils import atomic_save
+
+
+_VALID_NAME_RE = re.compile(r"^[A-z][-_A-z0-9]*\Z")
 
 
 class PPError(Exception):
@@ -216,6 +220,12 @@ class _EncryptedKeyDomain(object):
 
     def set_secret(self, name, value):
         'return a copy of the EncryptedKeyDomain with the new secret name/value'
+        name_match = _VALID_NAME_RE.match(name)
+        if not name_match:
+            raise ValueError('valid secret names must begin with a letter, and'
+                             ' consist only of ASCII letters, digits, and'
+                             ' underscores, not: %r' % name)
+
         secrets = dict(self._secrets)
         box = nacl.public.SealedBox(self._pub_key)
         secrets[name] = box.encrypt(value)
