@@ -1,4 +1,4 @@
-# Pocket Protector
+# Pocket Protector 🔏
 
 PocketProtector provides a cryptographically-strong, serverless secret
 management infrastructure. PocketProtector enables *key management as
