@@ -212,6 +212,8 @@ def new_main(argv):
     cmd.add(list_all_secrets)
     cmd.add(list_audit_log)
 
+    cmd.add(print_version, name='version')
+
     cmd.run()
 
 """
@@ -304,6 +306,11 @@ def rotate_domain_keys(wkf, creds):
 """
 Read-only operations follow
 """
+
+def print_version():
+    'print the PocketProtector version and exit'
+    print('pocket_protector version %s' % __version__)
+    sys.exit(0)
 
 
 def decrypt_domain(kf, creds, domain):
