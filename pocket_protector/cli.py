@@ -177,15 +177,17 @@ def new_main(argv):
             doc='show diff and prompt for confirmation before modifying the file')
     cmd.add('--non-interactive', parse_as=True,
             doc='disable falling back to interactive authentication, useful for automation')
+    cmd.add('--ignore-env', parse_as=True, display=False,  # TODO: keep?
+            doc='ignore environment variables like PPROTECT_PASSPHRASE')
     cmd.add('--user', char='-u',
             doc="the acting user's email credential")
     cmd.add('--passphrase-file',
             doc='path to a file containing only the passphrase, likely provided by a deployment system')
 
-    cmd.add(mw_exit_handler)  # TODO: document middleware order (outermost first)
-    cmd.add(mw_ensure_kf)
-    cmd.add(mw_write_kf)
     cmd.add(mw_verify_creds)
+    cmd.add(mw_write_kf)
+    cmd.add(mw_ensure_kf)
+    cmd.add(mw_exit_handler)  # TODO: document middleware order (outermost first)
 
     cmd.add(add_key_custodian)
     cmd.add(add_domain)
@@ -209,9 +211,9 @@ def add_domain(wkf, creds):
 
 
 @face_middleware(provides=['creds'], optional=True)
-def mw_verify_creds(next_, kf, user, check_env, non_interactive, passphrase_file):
+def mw_verify_creds(next_, kf, user, ignore_env, non_interactive, passphrase_file):
     creds = _get_creds(kf, user,
-                       check_env=check_env,
+                       check_env=not ignore_env,
                        interactive=not non_interactive,
                        passphrase_file=passphrase_file)
     return next_(creds=creds)
@@ -243,7 +245,7 @@ def mw_ensure_kf(next_, file, subcmds_):
 @face_middleware(provides=['wkf'], optional=True)
 def mw_write_kf(next_, kf, confirm):
     # TODO: confirm kf's path is writable before calling next_()
-    modified_kf = next_()
+    modified_kf = next_(wkf=kf)
     if not modified_kf:
         return modified_kf
 
