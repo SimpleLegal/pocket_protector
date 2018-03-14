@@ -244,6 +244,9 @@ def mw_ensure_kf(next_, file, subcmds_):
 
 @face_middleware(provides=['wkf'], optional=True)
 def mw_write_kf(next_, kf, confirm):
+    if not os.access(kf.path, os.W_OK):
+        raise PPCLIError('expected %r to be a writable file. Check the'
+                         ' permissions and try again.' % kf.path)
     # TODO: confirm kf's path is writable before calling next_()
     modified_kf = next_(wkf=kf)
     if not modified_kf:
@@ -258,7 +261,7 @@ def mw_write_kf(next_, kf, confirm):
         print('\n'.join(diff_lines) + '\n')
         do_write = raw_input('Write changes? [y/N] ')
         if not do_write.lower().startswith('y'):
-            print 'Aborting...'
+            print('Aborting...')
             sys.exit(0)
 
     modified_kf.write()
