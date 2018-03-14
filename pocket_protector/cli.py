@@ -189,11 +189,34 @@ def new_main(argv):
     cmd.add(mw_ensure_kf)
     cmd.add(mw_exit_handler)  # TODO: document middleware order (outermost first)
 
+    cmd.add(add_key_custodian, name='init', doc='create a new protected')
     cmd.add(add_key_custodian)
+
     cmd.add(add_domain)
+    cmd.add(rm_domain)
+
+    cmd.add(add_owner)
+    cmd.add(rm_owner)
+
+    cmd.add(add_secret)
+    cmd.add(update_secret)
+    cmd.add(rm_secret)
+
+    cmd.add(set_key_custodian_passphrase)
+    cmd.add(rotate_domain_keys)
+
+    cmd.add(decrypt_domain)
+
+    cmd.add(list_domains)
+    cmd.add(list_domain_secrets)
+    cmd.add(list_all_secrets)
+    cmd.add(list_audit_log)
 
     cmd.run()
 
+"""
+The following subcommand handlers all update/write to a protected file (wkf).
+"""
 
 def add_key_custodian(wkf):
     'add a new key custodian to the protected'
@@ -208,6 +231,129 @@ def add_domain(wkf, creds):
     domain_name = raw_input('Domain name: ')
 
     return wkf.add_domain(domain_name, creds.name)
+
+
+def rm_domain(wkf):
+    'remove a domain and all of its keys from the protected'
+    print 'Removing domain.'
+    domain_name = raw_input('Domain name: ')
+    return wkf.rm_domain(domain_name)
+
+
+def add_owner(wkf, creds):
+    'add a key custodian to the owner list of a specific domain'
+    print 'Adding domain owner.'
+    domain_name = raw_input('Domain name: ')
+    new_owner_name = raw_input('New owner email: ')
+    return wkf.add_owner(domain_name, new_owner_name, creds)
+
+
+def rm_owner(wkf):
+    'remove a key custodian from the owner list of a domain'
+    print 'Removing domain owner.'
+    domain_name = raw_input('Domain name: ')
+    owner_name = raw_input('Owner email: ')
+    return wkf.rm_owner(domain_name, owner_name)
+
+
+def add_secret(wkf):
+    'add a secret to a domain'
+    print 'Adding secret value.'
+    domain_name = raw_input('Domain name: ')
+    secret_name = raw_input('Secret name: ')
+    secret_value = raw_input('Secret value: ')
+    return wkf.add_secret(domain_name, secret_name, secret_value)
+
+
+def update_secret(wkf):
+    'update a secret value in a domain'
+    print 'Updating secret value.'
+    domain_name = raw_input('Domain name: ')
+    secret_name = raw_input('Secret name: ')
+    secret_value = raw_input('Secret value: ')
+    return wkf.update_secret(domain_name, secret_name, secret_value)
+
+
+def rm_secret(wkf):
+    'remove a secret from a domain'
+    print 'Updating secret value.'
+    domain_name = raw_input('Domain name: ')
+    secret_name = raw_input('Secret name: ')
+    secret_value = raw_input('Secret value: ')
+    return wkf.update_secret(domain_name, secret_name, secret_value)
+
+
+def set_key_custodian_passphrase(wkf):
+    'update a key custodian passphrase'
+    user_id = raw_input('User email: ')
+    passphrase = _get_pass(confirm_pass=False, label='Current passphrase')
+    creds = Creds(user_id, passphrase)
+    _check_creds(wkf, creds)
+    new_passphrase = _get_pass(confirm_pass=True,
+                               label='New passphrase',
+                               label2='Retype new passphrase')
+    return wkf.set_key_custodian_passphrase(creds, new_passphrase)
+
+
+def rotate_domain_keys(wkf, creds):
+    'rotate the internal encryption keys for a given domain'
+    domain_name = raw_input('Domain name: ')
+    return wkf.rotate_domain_key(domain_name, creds)
+
+
+"""
+Read-only operations follow
+"""
+
+
+def decrypt_domain(kf, creds, domain):
+    'output the decrypted contents of a domain in JSON format'
+    decrypted_dict = kf.decrypt_domain(domain, creds)
+    print json.dumps(decrypted_dict, indent=2, sort_keys=True)
+    return 0
+
+
+def list_domains(kf):
+    'print a list of domain names, if any'
+    domain_names = kf.get_domain_names()
+    if domain_names:
+        print '\n'.join(domain_names)
+    else:
+        print '(No domains in protected at %s)' % kf.path
+    return
+
+
+def list_domain_secrets(kf, domain):
+    'print a list of secret names for a given domain'
+    secret_names = kf.get_domain_secret_names(domain)
+    if secret_names:
+        print '\n'.join(secret_names)
+    else:
+        print '(No secrets in domain %r of protected at %s)' % (domain, kf.path)
+    return
+
+
+def list_all_secrets(kf):
+    'print a list of all secret names, along with the domains that define each'
+    secrets_map = kf.get_all_secret_names()
+    if not secrets_map:
+        print '(No secrets in protected at %s)' % kf.path
+    else:
+        for secret_name in sorted(secrets_map):
+            domain_names = sorted(set(secrets_map[secret_name]))
+            print '%s: %s' % (secret_name, ', '.join(domain_names))
+    return
+
+
+def list_audit_log(kf):
+    'print a list of actions from the audit log, one per line'
+    log_list = kf.get_audit_log()
+    print '\n'.join(log_list)
+    return
+
+"""
+End subcommand handlers
+"""
 
 
 @face_middleware(provides=['creds'], optional=True)
@@ -247,8 +393,9 @@ def mw_write_kf(next_, kf, confirm):
     if not os.access(kf.path, os.W_OK):
         raise PPCLIError('expected %r to be a writable file. Check the'
                          ' permissions and try again.' % kf.path)
-    # TODO: confirm kf's path is writable before calling next_()
+
     modified_kf = next_(wkf=kf)
+
     if not modified_kf:
         return modified_kf
 
