@@ -1,3 +1,4 @@
+import os
 import sys
 
 from .cli import main
@@ -7,4 +8,9 @@ if __name__ == '__main__':
         args = 'python -m pocket_protector' + sys.argv[1:]
     else:
         args = sys.argv
-    sys.exit(main(args) or 0)
+    try:
+        sys.exit(main(args) or 0)
+    except Exception:
+        if os.getenv('PPROTECT_ENABLE_DEBUG'):
+            import pdb;pdb.post_mortem()
+        raise
