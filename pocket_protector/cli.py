@@ -7,6 +7,8 @@ import getpass
 import difflib
 import argparse
 
+from face import Command, Flag, face_middleware
+
 from ._version import __version__
 from .file_keys import KeyFile, Creds, PPError
 
@@ -139,6 +141,24 @@ def get_argparser():
     return prs
 
 
+def _create_protected(path):
+    if os.path.exists(path):
+        raise PPCLIError('Protected file already exists: %s' % path, 2)
+    open(path, 'wb').close()
+    kf = KeyFile(path=path)
+    # TODO: add audit log entry for creation date
+    # TODO: add audit log dates in general
+    kf.write()
+    return kf
+
+
+def _ensure_protected(path):
+    if not os.path.exists(path):
+        raise PPCLIError('Protected file not found: %s' % path, 2)
+    kf = KeyFile.from_file(path)
+    return kf
+
+
 class PPCLIError(PPError):
     def __init__(self, msg=None, exit_code=1):
         self.msg = msg
@@ -146,6 +166,127 @@ class PPCLIError(PPError):
         if msg:
             super(PPCLIError, self).__init__(msg)
         return
+
+
+def new_main(argv):
+    # TODO: need to make this default to the help output
+    cmd = Command(name='pocket_protector', func=None)
+    cmd.add('--file', missing='protected.yaml',
+            doc='path to the PocketProtector-managed file, defaults to protected.yaml in the working directory')
+    cmd.add('--confirm', parse_as=True,
+            doc='show diff and prompt for confirmation before modifying the file')
+    cmd.add('--non-interactive', parse_as=True,
+            doc='disable falling back to interactive authentication, useful for automation')
+    cmd.add('--user', char='-u',
+            doc="the acting user's email credential")
+    cmd.add('--passphrase-file',
+            doc='path to a file containing only the passphrase, likely provided by a deployment system')
+
+    cmd.add(mw_exit_handler)  # TODO: document middleware order (outermost first)
+    cmd.add(mw_ensure_kf)
+    cmd.add(mw_write_kf)
+    cmd.add(mw_verify_creds)
+
+    cmd.add(add_key_custodian)
+    cmd.add(add_domain)
+
+    cmd.run()
+
+
+def add_key_custodian(wkf):
+    'add a new key custodian to the protected'
+    print 'Adding new key custodian.'
+    creds = _get_new_creds()
+    return wkf.add_key_custodian(creds)
+
+
+def add_domain(wkf, creds):
+    'add a new domain to the protected'
+    print 'Adding new domain.'
+    domain_name = raw_input('Domain name: ')
+
+    return wkf.add_domain(domain_name, creds.name)
+
+
+@face_middleware(provides=['creds'], optional=True)
+def mw_verify_creds(next_, kf, user, check_env, non_interactive, passphrase_file):
+    creds = _get_creds(kf, user,
+                       check_env=check_env,
+                       interactive=not non_interactive,
+                       passphrase_file=passphrase_file)
+    return next_(creds=creds)
+
+
+@face_middleware(provides=['kf'], optional=True)
+def mw_ensure_kf(next_, file, subcmds_):
+    file_path = file or 'protected.yaml'
+    file_abs_path = os.path.abspath(file_path)
+    init_kf = subcmds_[0] == 'init'
+    if init_kf:
+        kf = _create_protected(file_abs_path)
+    else:
+        kf = _ensure_protected(file_abs_path)
+
+    try:
+        ret = next_(kf=kf)
+    except:
+        if init_kf:
+            try:
+                os.unlink(file_abs_path)
+            except Exception:
+                print 'Warning: failed to remove file: %s' % file_abs_path
+        raise
+
+    return ret
+
+
+@face_middleware(provides=['wkf'], optional=True)
+def mw_write_kf(next_, kf, confirm):
+    # TODO: confirm kf's path is writable before calling next_()
+    modified_kf = next_()
+    if not modified_kf:
+        return modified_kf
+
+    if confirm:
+        diff_lines = list(difflib.unified_diff(kf.get_contents().splitlines(),
+                                               modified_kf.get_contents().splitlines(),
+                                               kf.path + '.old', kf.path + '.new'))
+        diff_lines = _get_colorized_lines(diff_lines)
+        print('Changes to be written:\n')
+        print('\n'.join(diff_lines) + '\n')
+        do_write = raw_input('Write changes? [y/N] ')
+        if not do_write.lower().startswith('y'):
+            print 'Aborting...'
+            sys.exit(0)
+
+    modified_kf.write()
+
+    return
+
+
+@face_middleware
+def mw_exit_handler(next_):
+    status = 55  # should always be set to something else
+    try:
+        try:
+            status = next_() or 0
+        except PPCLIError:
+            raise
+        except PPError as ppe:
+            raise PPCLIError(ppe.args[0])
+    except KeyboardInterrupt:
+        status = 130
+        print('')
+    except EOFError:
+        status = 1
+        print('')
+    except PPCLIError as ppce:
+        if ppce.args:
+            print('Error: ' + '; '.join([str(a) for a in ppce.args]))
+        status = ppce.exit_code
+
+    sys.exit(status)
+    return
 
 
 def main(argv=None):
@@ -195,24 +336,6 @@ def main(argv=None):
 
     sys.exit(ret)
     return
-
-
-def _create_protected(path):
-    if os.path.exists(path):
-        raise PPCLIError('Protected file already exists: %s' % path, 2)
-    open(path, 'wb').close()
-    kf = KeyFile(path=path)
-    # TODO: add audit log entry for creation date
-    # TODO: add audit log dates in general
-    kf.write()
-    return kf
-
-
-def _ensure_protected(path):
-    if not os.path.exists(path):
-        raise PPCLIError('Protected file not found: %s' % path, 2)
-    kf = KeyFile.from_file(path)
-    return kf
 
 
 def _main(kf, action, args):
@@ -428,3 +551,13 @@ def _get_creds(kf,
     _check_creds(kf, creds)
 
     return creds
+
+
+"""
+
+Face refactor notes:
+
+* middleware for creating/ensuring file
+* middleware for printing diff?
+
+"""
