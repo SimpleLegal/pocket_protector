@@ -32,7 +32,8 @@ setup(
                       'boltons',
                       'PyNaCl',
                       'ruamel.yaml',
-                      'schema']
+                      'schema',
+                      'face']
 )
 
 """

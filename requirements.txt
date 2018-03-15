@@ -7,3 +7,4 @@ ruamel.ordereddict==0.4.13
 ruamel.yaml==0.15.34
 schema==0.6.6
 six==1.11.0
+face>=0.1.0
