@@ -5,7 +5,6 @@ import sys
 import json
 import getpass
 import difflib
-import argparse
 
 from face import Command, Flag, face_middleware
 
@@ -145,7 +144,7 @@ def _check_creds(kf, creds, raise_exc=True):
     return True
 
 
-def main(argv):
+def main(argv=None):
     cmd = Command(name='pocket_protector', func=None)  # func=None means output help
 
     # add flags
@@ -194,7 +193,7 @@ def main(argv):
 
     cmd.add(print_version, name='version')
 
-    cmd.run()  # exit behavior is handled by mw_exit_handler
+    cmd.run(argv=argv)  # exit behavior is handled by mw_exit_handler
 
     return
 
