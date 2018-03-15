@@ -184,10 +184,10 @@ def main(argv=None):
     cmd.add(set_key_custodian_passphrase)
     cmd.add(rotate_domain_keys)
 
-    cmd.add(decrypt_domain, posargs=True)
+    cmd.add(decrypt_domain, posargs=1)
 
     cmd.add(list_domains)
-    cmd.add(list_domain_secrets, posargs=True)
+    cmd.add(list_domain_secrets, posargs=1)
     cmd.add(list_all_secrets)
     cmd.add(list_audit_log)
 
