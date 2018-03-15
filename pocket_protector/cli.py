@@ -184,15 +184,16 @@ def main(argv=None):
     cmd.add(set_key_custodian_passphrase)
     cmd.add(rotate_domain_keys)
 
-    cmd.add(decrypt_domain)
+    cmd.add(decrypt_domain, posargs=True)
 
     cmd.add(list_domains)
-    cmd.add(list_domain_secrets)
+    cmd.add(list_domain_secrets, posargs=True)
     cmd.add(list_all_secrets)
     cmd.add(list_audit_log)
 
     cmd.add(print_version, name='version')
 
+    cmd.prepare()  # an optional check on all subcommands, not just the one being executed
     cmd.run(argv=argv)  # exit behavior is handled by mw_exit_handler
 
     return
@@ -295,9 +296,10 @@ def print_version():
     sys.exit(0)
 
 
-def decrypt_domain(kf, creds, domain):
+def decrypt_domain(kf, creds, posargs_):
     'output the decrypted contents of a domain in JSON format'
-    decrypted_dict = kf.decrypt_domain(domain, creds)
+    domain_name = posargs_[0]
+    decrypted_dict = kf.decrypt_domain(domain_name, creds)
     print json.dumps(decrypted_dict, indent=2, sort_keys=True)
     return 0
 
@@ -312,8 +314,9 @@ def list_domains(kf):
     return
 
 
-def list_domain_secrets(kf, domain):
+def list_domain_secrets(kf, posargs_):
     'print a list of secret names for a given domain'
+    domain = posargs_[0]
     secret_names = kf.get_domain_secret_names(domain)
     if secret_names:
         print '\n'.join(secret_names)
