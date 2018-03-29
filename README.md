@@ -206,7 +206,7 @@ git history is accidentally pushed to a publically acessible repo.
 With read access, an attacker gets environment and secret names,
 and which secrets are used in which environments.
 
-Neither the file as a whole nore individual entries are signed,
+Neither the file as a whole nor individual entries are signed,
 since the security model assumes an attacker does not have
 write access.
 
