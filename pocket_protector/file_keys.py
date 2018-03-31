@@ -13,6 +13,7 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
+from datetime import datetime
 
 import attr
 import nacl.utils
@@ -26,6 +27,7 @@ from boltons.fileutils import atomic_save
 
 
 _VALID_NAME_RE = re.compile(r"^[A-z][-_A-z0-9]*\Z")
+_DATE_FORMAT = "%Y-%m-%d"
 
 
 class PPError(Exception):
@@ -416,50 +418,50 @@ class KeyFile(object):
         domains = dict(self._domains)
         domains[domain_name] = _EncryptedKeyDomain.from_owner(
             domain_name, key_custodian)
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['created domain {} with owner {}'.format(
-                domain_name, key_custodian_name)])
+        return self.evolve(
+            domains=domains,
+            log_entry='created domain {} with owner {}'.format(
+                domain_name, key_custodian_name))
 
     def rm_domain(self, domain_name):
         '''
         return a copy with domain domain_name removed
         '''
-        return attr.evolve(
-            self, domains=_deleted(self._domains, domain_name),
-            log=self._log + ['deleted domain {}'.format(domain_name)])
+        return self.evolve(
+            domains=_deleted(self._domains, domain_name),
+            log_entry='deleted domain {}'.format(domain_name))
 
     def set_secret(self, domain_name, name, value):
         'return a copy of the KeyFile with the given secret name and value added to a domain'
         domains = dict(self._domains)
         domains[domain_name] = self._domains[domain_name].set_secret(name, value)
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['set secret {} in {}'.format(name, domain_name)])
+        return self.evolve(
+            domains=domains,
+            log_entry='set secret {} in {}'.format(name, domain_name))
 
     def add_secret(self, domain_name, name, value):
         'add a secret that doesnt exist yet'
         domains = dict(self._domains)
         domains[domain_name] = self._domains[domain_name].add_secret(name, value)
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['added secret {} in {}'.format(name, domain_name)])
+        return self.evolve(
+            domains=domains,
+            log_entry='added secret {} in {}'.format(name, domain_name))
 
     def update_secret(self, domain_name, name, value):
         'update the value of a secret that already exists'
         domains = dict(self._domains)
         domains[domain_name] = self._domains[domain_name].update_secret(name, value)
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['updated secret {} in {}'.format(name, domain_name)])
+        return self.evolve(
+            domains=domains,
+            log_entry='updated secret {} in {}'.format(name, domain_name))
 
     def rm_secret(self, domain_name, name):
         'return a copy with secret removed from domain'
         domains = dict(self._domains)
         domains[domain_name] = self._domains[domain_name].rm_secret(name)
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['removed secret {} from {}'.format(name, domain_name)])
+        return self.evolve(
+            domains=domains,
+            log_entry='removed secret {} from {}'.format(name, domain_name))
 
     def add_owner(self, domain_name, key_custodian_name, creds):
         '''
@@ -470,10 +472,10 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].add_owner(
             cur_creds=creds, cur_key_custodian=self._key_custodians[creds.name],
             new_key_custodian=self._key_custodians[key_custodian_name])
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['{} added owner {} to {}'.format(
-                creds.name, key_custodian_name, domain_name)])
+        return self.evolve(
+            domains=domains,
+            log_entry='{} added owner {} to {}'.format(
+                creds.name, key_custodian_name, domain_name))
 
     def rm_owner(self, domain_name, key_custodian_name):
         '''
@@ -482,12 +484,12 @@ class KeyFile(object):
         will still be able to get to values until you rotate
         the domain keypair, and secret values)
         '''
-        return attr.evolve(
-            self, domains=_setitem(
+        return self.evolve(
+            domains=_setitem(
                 self._domains, domain_name,
                 self._domains[domain_name].rm_owner(key_custodian_name)),
-            log=self._log + ['removed owner {} from {}'.format(
-                key_custodian_name, domain_name)])
+            log_entry='removed owner {} from {}'.format(
+                key_custodian_name, domain_name))
 
     def add_key_custodian(self, creds):
         key_custodians = dict(self._key_custodians)
@@ -495,9 +497,9 @@ class KeyFile(object):
             raise PPError(
                 'tried to add key custodian that already exists: {}'.format(creds.name))
         key_custodians[creds.name] = _KeyCustodian.from_creds(creds)
-        return attr.evolve(
-            self, key_custodians=key_custodians,
-            log=self._log + ['created key custodian {}'.format(creds.name)])
+        return self.evolve(
+            key_custodians=key_custodians,
+            log_entry='created key custodian {}'.format(creds.name))
 
     def rm_key_custodian(self, key_custodian_name):
         'remove key custodian and all domain ownerships'
@@ -509,10 +511,10 @@ class KeyFile(object):
                 domains[name] = domain.rm_owner(key_custodian_name)
                 owned.append(name)
         del key_custodians[key_custodian_name]
-        return attr.evolve(
-            self, key_custodians=key_custodians, domains=domains,
-            log=self._log + ['removed key custodian {} (was owner of {})'.format(
-                key_custodian_name, ", ".join(owned))])
+        return self.evolve(
+            key_custodians=key_custodians, domains=domains,
+            log_entry='removed key custodian {} (was owner of {})'.format(
+                key_custodian_name, ", ".join(owned)))
 
     def decrypt_domain(self, domain_name, creds):
         return self._domains[domain_name].get_decrypted(
@@ -531,11 +533,9 @@ class KeyFile(object):
                     cur_creds=creds, cur_key_custodian=cur_kc,
                     new_key_custodian=new_kc)
                 updated.append(name)
-        return attr.evolve(
-            self, key_custodians=key_custodians, domains=domains,
-            log=self._log + [
-                'updated key custodian passphrase for {} (updated domains -- {})'.format(
-                    creds.name, ", ".join(updated))])
+        return self.evolve(key_custodians=key_custodians, domains=domains,
+            log_entry='updated key custodian passphrase for {} (updated domains -- {})'.format(
+            creds.name, ", ".join(updated)))
 
     def check_creds(self, creds):
         try:
@@ -568,9 +568,8 @@ class KeyFile(object):
                 new_key_custodian=self._key_custodians[owner_name])
         domains = dict(self._domains)
         domains[domain_name] = new_domain
-        return attr.evolve(
-            self, domains=domains,
-            log=self._log + ['rotated key for domain {}'.format(domain_name)])
+        return self.evolve(domains=domains,
+            log_entry='rotated key for domain {}'.format(domain_name))
 
     def truncate_audit_log(self, max_keep):
         max_keep = int(max_keep)
@@ -579,3 +578,12 @@ class KeyFile(object):
         msg = 'truncated %s audit log entries' % (len(self._log) - max_keep)
         new_log = [msg] + self._log[-max_keep:]
         return attr.evolve(self, log=new_log)
+
+    def evolve(self, log_entry, **kwargs):
+        evolved = attr.evolve(self, **kwargs)
+        logged = evolved.append_to_audit_log(log_entry)
+        return logged
+
+    def append_to_audit_log(self, log_entry):
+        tmstmped = " ".join((datetime.today().strftime(_DATE_FORMAT), log_entry))
+        return attr.evolve(self, log=self._log + [tmstmped])

@@ -202,10 +202,11 @@ def _create_protected(path):
         raise PPCLIError('Protected file already exists: %s' % path, 2)
     open(path, 'wb').close()
     kf = KeyFile(path=path)
+    logged_kf = kf.append_to_audit_log("File Created")
     # TODO: add audit log entry for creation date
     # TODO: add audit log dates in general
-    kf.write()
-    return kf
+    logged_kf.write()
+    return logged_kf
 
 
 def _ensure_protected(path):
