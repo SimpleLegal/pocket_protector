@@ -69,7 +69,7 @@ def _get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'
     if confirm_pass:
         passphrase2 = getpass.getpass('%s: ' % label2)
         if passphrase != passphrase2:
-            print 'Sorry, passphrases did not match.'
+            print('Sorry, passphrases did not match.')
             sys.exit(1)
     return passphrase
 
@@ -205,14 +205,14 @@ The following subcommand handlers all update/write to a protected file (wkf).
 
 def add_key_custodian(wkf):
     'add a new key custodian to the protected'
-    print 'Adding new key custodian.'
+    print('Adding new key custodian.')
     creds = _get_new_creds()
     return wkf.add_key_custodian(creds)
 
 
 def add_domain(wkf, creds):
     'add a new domain to the protected'
-    print 'Adding new domain.'
+    print('Adding new domain.')
     domain_name = raw_input('Domain name: ')
 
     return wkf.add_domain(domain_name, creds.name)
@@ -220,14 +220,14 @@ def add_domain(wkf, creds):
 
 def rm_domain(wkf):
     'remove a domain and all of its keys from the protected'
-    print 'Removing domain.'
+    print('Removing domain.')
     domain_name = raw_input('Domain name: ')
     return wkf.rm_domain(domain_name)
 
 
 def add_owner(wkf, creds):
     'add a key custodian to the owner list of a specific domain'
-    print 'Adding domain owner.'
+    print('Adding domain owner.')
     domain_name = raw_input('Domain name: ')
     new_owner_name = raw_input('New owner email: ')
     return wkf.add_owner(domain_name, new_owner_name, creds)
@@ -235,7 +235,7 @@ def add_owner(wkf, creds):
 
 def rm_owner(wkf):
     'remove a key custodian from the owner list of a domain'
-    print 'Removing domain owner.'
+    print('Removing domain owner.')
     domain_name = raw_input('Domain name: ')
     owner_name = raw_input('Owner email: ')
     return wkf.rm_owner(domain_name, owner_name)
@@ -243,7 +243,7 @@ def rm_owner(wkf):
 
 def add_secret(wkf):
     'add a secret to a domain'
-    print 'Adding secret value.'
+    print('Adding secret value.')
     domain_name = raw_input('Domain name: ')
     secret_name = raw_input('Secret name: ')
     secret_value = raw_input('Secret value: ')
@@ -252,7 +252,7 @@ def add_secret(wkf):
 
 def update_secret(wkf):
     'update a secret value in a domain'
-    print 'Updating secret value.'
+    print('Updating secret value.')
     domain_name = raw_input('Domain name: ')
     secret_name = raw_input('Secret name: ')
     secret_value = raw_input('Secret value: ')
@@ -261,7 +261,7 @@ def update_secret(wkf):
 
 def rm_secret(wkf):
     'remove a secret from a domain'
-    print 'Updating secret value.'
+    print('Updating secret value.')
     domain_name = raw_input('Domain name: ')
     secret_name = raw_input('Secret name: ')
     secret_value = raw_input('Secret value: ')
@@ -300,7 +300,7 @@ def decrypt_domain(kf, creds, posargs_):
     'output the decrypted contents of a domain in JSON format'
     domain_name = posargs_[0]
     decrypted_dict = kf.decrypt_domain(domain_name, creds)
-    print json.dumps(decrypted_dict, indent=2, sort_keys=True)
+    print(json.dumps(decrypted_dict, indent=2, sort_keys=True))
     return 0
 
 
@@ -308,9 +308,9 @@ def list_domains(kf):
     'print a list of domain names, if any'
     domain_names = kf.get_domain_names()
     if domain_names:
-        print '\n'.join(domain_names)
+        print('\n'.join(domain_names))
     else:
-        print '(No domains in protected at %s)' % kf.path
+        print('(No domains in protected at %s)' % kf.path)
     return
 
 
@@ -319,9 +319,9 @@ def list_domain_secrets(kf, posargs_):
     domain = posargs_[0]
     secret_names = kf.get_domain_secret_names(domain)
     if secret_names:
-        print '\n'.join(secret_names)
+        print('\n'.join(secret_names))
     else:
-        print '(No secrets in domain %r of protected at %s)' % (domain, kf.path)
+        print('(No secrets in domain %r of protected at %s)' % (domain, kf.path))
     return
 
 
@@ -329,18 +329,18 @@ def list_all_secrets(kf):
     'print a list of all secret names, along with the domains that define each'
     secrets_map = kf.get_all_secret_names()
     if not secrets_map:
-        print '(No secrets in protected at %s)' % kf.path
+        print('(No secrets in protected at %s)' % kf.path)
     else:
         for secret_name in sorted(secrets_map):
             domain_names = sorted(set(secrets_map[secret_name]))
-            print '%s: %s' % (secret_name, ', '.join(domain_names))
+            print('%s: %s' % (secret_name, ', '.join(domain_names)))
     return
 
 
 def list_audit_log(kf):
     'print a list of actions from the audit log, one per line'
     log_list = kf.get_audit_log()
-    print '\n'.join(log_list)
+    print('\n'.join(log_list))
     return
 
 """
@@ -376,7 +376,7 @@ def mw_ensure_kf(next_, file, subcmds_):
             try:
                 os.unlink(file_abs_path)
             except Exception:
-                print 'Warning: failed to remove file: %s' % file_abs_path
+                print('Warning: failed to remove file: %s' % file_abs_path)
         raise
 
     return ret
