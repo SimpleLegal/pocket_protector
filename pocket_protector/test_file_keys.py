@@ -62,9 +62,9 @@ def test_file_keys():
     test.write()
     round_trip = file_keys.KeyFile.from_file(test.path)
     assert round_trip == test
-    print "generated file:"
-    print open(test.path).read()
-    print "..."
+    print("generated file:")
+    print(open(test.path).read())
+    print("...")
 
 
 if __name__ == "__main__":
