@@ -1,0 +1,12 @@
+[run]
+branch = True
+source =
+    pocket_protector
+    ../pocket_protector
+
+[paths]
+source =
+   ../pocket_protector
+   */lib/python*/site-packages/pocket_protector
+   */Lib/site-packages/pocket_protector
+   */pypy/site-packages/pocket_protector
