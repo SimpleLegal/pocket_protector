@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import file_keys
+from __future__ import unicode_literals
+
+from . import file_keys
 
 import tempfile
 
 
 def test_file_keys():
-    bob_creds = file_keys.Creds('bob@example.com', 'super-secret')
-    alice_creds = file_keys.Creds('alice@example.com', 'super-duper-secret')
+    bob_creds = file_keys.Creds('bob@example.com', b'super-secret')
+    alice_creds = file_keys.Creds('alice@example.com', b'super-duper-secret')
 
     _prev = [None]
     def chk(fk):
@@ -24,26 +26,26 @@ def test_file_keys():
     chk(test)
 
     try:
-        test3f = test = test.add_secret('new_domain', '$brokenkey', 'world')
+        test3f = test = test.add_secret('new_domain', '$brokenkey', b'world')
     except ValueError:
         pass
     else:
         raise RuntimeError('failed to catch invalid flag name')
 
-    test3a = test = test.add_secret('new_domain', 'hello', 'world')
+    test3a = test = test.add_secret('new_domain', 'hello', b'world')
     chk(test)
-    test3b = test = test.update_secret('new_domain', 'hello', 'world2')
+    test3b = test = test.update_secret('new_domain', 'hello', b'world2')
     chk(test)
-    test4 = test = test.set_secret('new_domain', 'hello', 'world')
+    test4 = test = test.set_secret('new_domain', 'hello', b'world')
     chk(test)
     test4a = test = test.rm_secret('new_domain', 'hello')
     chk(test)
-    test4b = test = test.set_secret('new_domain', 'hello', 'world')
+    test4b = test = test.set_secret('new_domain', 'hello', b'world')
     chk(test)
-    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'world'
-    test5 = test = test.set_secret('new_domain', 'hello', 'better-world')
+    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == b'world'
+    test5 = test = test.set_secret('new_domain', 'hello', b'better-world')
     chk(test)
-    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'better-world'
+    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == b'better-world'
     test6 = test = test.add_key_custodian(alice_creds)
     chk(test)
     test7 = test = test.add_owner('new_domain', alice_creds.name, bob_creds)
@@ -58,7 +60,7 @@ def test_file_keys():
     test10 = test = test.rotate_domain_key('new_domain', bob_creds)
     chk(test)
     assert test.decrypt_domain('new_domain', bob_creds) == before_rotate
-    test11 = test = test.set_key_custodian_passphrase(bob_creds, 'ultra-extra-secret')
+    test11 = test = test.set_key_custodian_passphrase(bob_creds, b'ultra-extra-secret')
     test.write()
     round_trip = file_keys.KeyFile.from_file(test.path)
     assert round_trip == test

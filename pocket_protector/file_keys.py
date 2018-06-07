@@ -24,6 +24,11 @@ import ruamel.yaml
 from boltons.dictutils import OMD
 from boltons.fileutils import atomic_save
 
+try:
+    unicode = unicode
+except NameError:
+    unicode = str  # py3
+
 
 _VALID_NAME_RE = re.compile(r"^[A-z][-_A-z0-9]*\Z")
 
@@ -41,17 +46,17 @@ _FILE_SCHEMA = schema.Schema(
     "audit-log": [str],
     "key-custodians": {
         schema.Optional(str): {
-            "pwdkm": str,
+            "pwdkm": bytes,
         },
     },
     schema.Optional(schema.Regex("^(?!meta).*$")): {
         # allow string names for security domains,
         # but meta is reserved
         "meta": {
-            "owners": {str: str},
-            "public-key": str,
+            "owners": {str: bytes},
+            "public-key": bytes,
         },
-        schema.Optional(schema.Regex("secret-.*")): str,
+        schema.Optional(schema.Regex("secret-.*")): bytes,
     },
 })
 
@@ -60,19 +65,22 @@ _FILE_SCHEMA = schema.Schema(
 @attr.s(frozen=True)
 class Creds(object):
     "Stores credentials used to open a KeyFile"
-    name = attr.ib()
-    passphrase = attr.ib()
+    name = attr.ib(validator=attr.validators.instance_of(unicode))
+    passphrase = attr.ib(validator=attr.validators.instance_of(bytes))
     name_source = attr.ib(default=None)
     passphrase_source = attr.ib(default=None)
 
 
 def _kdf(creds, salt):
-    valet_key = hashlib.sha512(creds.passphrase + salt + creds.name).digest()
+    name = creds.name.encode('utf8')
+    passphrase = creds.passphrase
+
+    valet_key = hashlib.sha512(passphrase + salt + name).digest()
     # valet key can be used to share credentials
     # without exposing password
     return nacl.pwhash.argon2id.kdf(
         nacl.public.PrivateKey.SIZE,
-        valet_key, hashlib.sha512(salt + creds.name).digest()[:16],
+        valet_key, hashlib.sha512(salt + name).digest()[:16],
         opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
         memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
 
@@ -88,14 +96,14 @@ def _decode(b64):
     detect the problem and notify the user cleanly)
     '''
     raw = base64.b64decode(b64)
-    if raw[0] == '\0':
+    if raw[:1] == b'\0':
         return raw[1:]
-    raise PPError('version %s object not supported' % ord(raw))
+    raise PPError('version %s object not supported' % ord(raw[:1]))
 
 
 def _encode(raw):
     'add version 0 byte to everything'
-    return base64.b64encode('\0' + raw)
+    return base64.b64encode(b'\0' + raw)
 
 
 @attr.s(frozen=True)
@@ -402,7 +410,7 @@ class KeyFile(object):
         'write contents to file'
         contents = self.get_contents()
         with atomic_save(self.path) as file:
-            file.write(contents)
+            file.write(contents.encode('utf8'))
         return
 
     def add_domain(self, domain_name, key_custodian_name):
