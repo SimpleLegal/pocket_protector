@@ -32,24 +32,33 @@ class PPKeyError(PPError, KeyError):
     pass
 
 
-_FILE_SCHEMA = schema.Schema(
+# _coerce to handle ruamel type switcheroo
+def _coerce(type_, sub_schema):
+    return schema.And(schema.Use(type_), sub_schema)
+
+
+def _as_d(sub_schema): return _coerce(dict, sub_schema)
+def _as_l(sub_schema): return _coerce(list, sub_schema)
+
+
+_FILE_SCHEMA = schema.Schema(_as_d(
 {
-    "audit-log": [str],
-    "key-custodians": {
-        schema.Optional(str): {
+    "audit-log": _as_l([str]),
+    "key-custodians": _as_d({
+        schema.Optional(str): _as_d({
             "pwdkm": str,
-        },
-    },
-    schema.Optional(schema.Regex("^(?!meta).*$")): {
+        }),
+    }),
+    schema.Optional(schema.Regex("^(?!meta).*$")): _as_d({
         # allow string names for security domains,
         # but meta is reserved
-        "meta": {
-            "owners": {str: str},
+        "meta": _as_d({
+            "owners": _as_d({str: str}),
             "public-key": str,
-        },
+        }),
         schema.Optional(schema.Regex("secret-.*")): str,
-    },
-})
+    }),
+}))
 
 
 # NOTE: this is a public class since it must be passed in
