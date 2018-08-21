@@ -182,15 +182,14 @@ something like this:
 
 ```
 dev:
-  secret-chat-api-key: AHjJzxmel+dWrLD7p8ertxnEOzOvm9UsaW2c60qH6OlEkpbOuC/3HlfdVG2aYoGl91sKQ6b7XG03ceVS
+  secret-chat-api-key: AJ9XggjXrAGhiLKi++JcnPQp21w8eA9xVvaObuqGlsNenCLkG7CR6EYTMUVriZEBdczs1C1wKdOPqymg
   meta:
-    public-key: ANO5xKMEyKcDKFn0veQqL/iJ9xrQ7Dbw5BEqXJL5sHlN
+    public-key: AGhhn94rgArfPfI9CrqfjjV5pAgf9XTkcPYB3rMgqsZl
     owners:
-      tom@example.com: ACEP49ocfKSxF3bDhUJX3L+lezy8uy5MqR/+oI/Gdf88Zclw5FU0kuNOexXH7+yTPXr5a6HBzfIGzoQOP0Myj9d68uYZVh4p6ooxqEIABKc5
+      tom@example.com: AE6sqmhfPthGc3NlSImebhotARpuyJjQ44Atk3aarQwfsNDSO/v9vjrfkdhi/pTnCHm2dCBva7Wj9eKCAn8K6/n1k16z2oD8SV8r0qN0NHa4
 key-custodians:
   tom@example.com:
-    encrypted-private-key: AFUsvKnd/KgHaBpBOrjeUYGLQWN7XGD8NBtFvw+bNh1Soli3psRX4/dmV5lKOEEZcJn6X25rlfgt9xUYqHWVl6Pxvpl2GEVeBA==
-    public-key: AFsz1p73HOZNjOKBUYoLnnO34iylATWOuqe+XDY9w4w6
+    pwdkm: ACP7GZtkl6twYUY8cnVokBaD14+Mze/gi4ygnWhreY82mEZVbAr6fCc=
 audit-log:
 - created key custodian tom@example.com
 - created domain dev with owner tom@example.com
@@ -290,6 +289,7 @@ complements to the audit log.
 The audit log is also completely supplementary. It can safely be
 truncated without affecting any other PocketProtector functionality.
 
+<!--
 ## TODO
 
 One of PocketProtector's biggest features is its distributed
@@ -298,11 +298,24 @@ set of credentials, if it requires credentials at all. This enables
 teams, local and remote, to securely share keys without requiring side
 channels. We'll see more of this in the sections ahead.
 
-<!--
+
 
 * link key custodian
 * link "yaml"
 * talk about blame
 
+Steps:
+
+* Starting
+* Add manager
+* Add domain (environment)
+    * Creator becomes first owner
+* Add a secret
+* Grant access to domain
+* Update your passphrase
+* Removing a custodian (i.e., what to do when someone leaves)
+* Updating or removing secrets
+* Rotations
+
+
 -->
-## FAQ

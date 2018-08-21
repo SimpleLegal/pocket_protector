@@ -22,6 +22,14 @@ def test_file_keys():
     chk(test)
     test3 = test = test.add_domain('new_domain', bob_creds.name)
     chk(test)
+
+    try:
+        test3f = test = test.add_secret('new_domain', '$brokenkey', 'world')
+    except ValueError:
+        pass
+    else:
+        raise RuntimeError('failed to catch invalid flag name')
+
     test3a = test = test.add_secret('new_domain', 'hello', 'world')
     chk(test)
     test3b = test = test.update_secret('new_domain', 'hello', 'world2')

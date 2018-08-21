@@ -1,29 +1,164 @@
-PocketProtector provides a cryptographicaly strong
-serverless secret management infrastructure.  An applications
-secrets are stored securely right alongside its code.
+# Pocket Protector 🔏
 
-The theory of operation is that the protected.yaml file
-consists of key-domains at the root level.  Each key-domain
-stores data encrypted by a keypair.  The public key of the
-keypair is stored in plaintext, so that anyone may encrypt
-and add a new secret.  The private key is stored encrypted
-by an owners public key.  The owners are known as
-"key custodians", their private keys are protected by passphrases.
+PocketProtector provides a cryptographically-strong, serverless secret
+management infrastructure. PocketProtector enables *key management as
+code*, securely storing secrets in a versionable format, right
+alongside the corresponding application code.
 
-Secrets are broken up into domains for the purposes of
-granting security differently.  For example, prod, dev, and
-stage may all be different domains.  The domains may
-further be split up based on application specific.
+PocketProtector's approach lets you:
 
-Alternatively, for a simple use case everything may
-be thrown into one big domain.
+* Leverage existing user, versioning, and backup systems, with no
+  infrastructure to set up
+* Support multiple environments
+* Integrate easily with existing key management systems
+  (AWS/Heroku/TravisCI)
+* Minimizes the number of passphrases and keys your team has to
+  remember and secure
+* Beats the heck out of hardcoded plaintext secrets!
 
-To allow secrets to be accessed in a certain environment,
-the passphrase for an environment-specific key custodian
-should be provided.
+## Installation
 
-e.g. for dev domains, just hardcode the passphrase
-in settings.py or similar
+Right now, the easiest way to install PocketProtector across all
+platforms is with `pip`:
+
+```
+pip install pocket_protector
+```
+
+This will install a command-line application, `pocket_protector`,
+conveniently shortened to `pprotect`, which you can use to test your
+installation:
+
+```
+$ pprotect version
+pocket_protector version 18.0.0
+```
+
+Once the above is working, we're ready to start using PocketProtector!
+
+## Usage
+
+PocketProtector aims to be as easy to use as a secret management
+system can get. That said, understanding security takes time, so be
+sure to go beyond the quick start and reference below, and read
+[our User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
+as well as the docs below.
+
+### Quick start
+
+PocketProtector's CLI is its primary interface. It presents a compact
+set of commands, each representing one action you might want to take
+on a secret store. Basic usage starts on your laptop, inside your
+checked out code repository:
+
+```
+# create a new protected file
+pprotect init
+
+# add a key domain
+pprotect add-domain
+
+# add a secret to the new key domain
+pprotect add-secret
+
+# decrypt and read out the secret
+pprotect decrypt-domain
+```
+
+Each of these will prompt the user for credentials when necessary. See
+the section below on passing credentials.
+
+When you're done updating the secret store, simply `git commit` (or
+equivalent) to save your changes. Should you make any mistakes, use
+your VCS to revert the changes.
+
+### Passing credentials
+
+By default, the `pocket_protector` command prompts you for credentials
+when necessary. But convenience and automation both demand more
+options, highlighted here:
+
+* Command-line Flags
+    * `-u / --user USER_EMAIL` - specifies the user email for subcommands which require it
+    * `--passphrase-file PATH` - specifies a path to a readable file
+      which contains the passphrase (useful for mount-based key
+      management, like Docker)
+    * `--domain DOMAIN` - specifies the name of the domain
+    * `--non-interactive` - causes the command to fail when credentials cannot be gotten by other means
+
+* Environment variables
+   * `PPROTECT_USER` - environment variable which contains the user email
+   * `PPROTECT_PASSPHRASE` - environment variable which contains the
+     passphrase (useful for environment variable-based key management,
+     used by AWS/Heroku/many CI systems)
+
+In all cases, flags take precedence over environment variables, and
+both take precedence over and bypass interactive prompts. In the event
+an incorrect credential is passed, pocket_protector does *not*
+automatically check other sources.
+
+See [our User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
+for more usage tips.
+
+### Command summary
+
+Here is a summary of all commands:
+
+```
+usage: pprotect [COMMANDS]
+
+Commands:
+  add-domain            add a new domain to the protected
+  add-key-custodian     add a new key custodian to the protected
+  add-owner             add a key custodian as owner of a domain
+  add-secret            add a secret to a specified domain
+  decrypt-domain        decrypt and display JSON-formatted cleartext for a
+                        domain
+  init                  create a new pocket-protected file
+  list-all-secrets      display all secrets, with a list of domains the key is
+                        present in
+  list-audit-log        display a chronological list of audit log entries
+                        representing file activity
+  list-domain-secrets   display a list of secrets under a specific domain
+  list-domains          display a list of available domains
+  list-user-secrets     similar to list-all-secrets, but filtered by a given
+                        user
+  rm-domain             remove a domain from the protected
+  rm-owner              remove an owner's privileges on a specified domain
+  rm-secret             remove a secret from a specified domain
+  rotate-domain-keys    rotate the internal keys for a particular domain (must
+                        be owner)
+  set-key-custodian-passphrase
+                        change a key custodian passphrase
+  update-secret         update an existing secret in a specified domain
+```
+
+## Design
+
+The theory of operation is that the protected.yaml file consists of
+"key domains" at the root level.  Each domain stores data encrypted by
+a keypair. The public key of the keypair is stored in plaintext, so
+that anyone may encrypt and add a new secret.  The private key is
+encrypted with the owner's passphrase. The owners are known as "key
+custodians", and their private keys are protected by passphrases.
+
+Secrets are broken up into domains for the purposes of granting
+security differently. For example, `prod`, `dev`, and `stage` may all
+be different domains. Protected stores may have as few or as many
+domains as the team and application require.
+
+To allow secrets to be accessed in a certain environment, Pocket
+Protector must be invoked with a user and passphrase. As long as the
+credentials are correct and the user has permissions to a domain, all
+secrets within that domain are unlocked.
+
+Passphrase security will depend on the domain. For instance, a domain
+used for local development may set the passphrase as an environment
+variable, or hardcode it in a configuration file.
+
+On the other hand, a production domain would likely require manual
+entry of an authorized release engineer, or use AWS/GCP/Heroku key
+management solutions to inject the passphrase.
 
 for prod domains, use AWS / heroku key management to store
 the passphrase
@@ -61,8 +196,8 @@ key-custodians:
     encrypted-private-key: [b64-bytes]
 ```
 
-Threat model
-------------
+### Threat model
+
 An attacker is presumed to be able to read but not write the contents
 of protected.yaml.  This could happen because a developrs laptop
 is compromised, github credentials are compromised, or (most likely)
@@ -71,41 +206,13 @@ git history is accidentally pushed to a publically acessible repo.
 With read access, an attacker gets environment and secret names,
 and which secrets are used in which environments.
 
-Neither the file as a whole nore individual entries are signed,
+Neither the file as a whole nor individual entries are signed,
 since the security model assumes an attacker does not have
 write access.
 
-Example File
-------------
-Here's an example of the protected.yaml file generated by the unit
-tests:
+### Notes
 
-```yaml
-new_domain:
-  secret-hello: zBE9iug3yBYMFCBNBoFOQ/M3LQH5PnJuevmFzJO4BWvLG0JRGwqlTBcjZh2QaTjLJef+2Go=
-  meta:
-    public-key: DaX/DYMRb8pm6rVzA/Kf3DFmtDBUX5JJGXq57T4k20g=
-    owners:
-      alice@example.com: JljOSu5SHbFY0UGsMkTqVach/Y6VE9MmVMujauUK8UTwgkjSIq7rISGuOydQwSblHkq8nUToS+cRiCc2LJ19PJaTwgWcuqL+Y4tWvLL9ovo=
-      bob@example.com: gUBCI9NJinch1dnnGr93RHVqmv8bJ7DdIDfFEqt5Cm68blyaWM17XhSUjtQRCkouZoiN6gPKrduFTZ6HlRgDTWqP0HSJdZPjNHkOj6wtUxQ=
-key-custodians:
-  alice@example.com:
-    encrypted-private-key: O0XrgEuATOVvlNBRe5nsD+sSlXICDTq3pbzaj0zc338cZMTcrmlAVfzpLca1D6D4JmTyCwarx7qSrHNGP1b9bRNaDW3K7Ey4
-    public-key: jPrgsotnMklLdZZv+jK0O1Jb5C2D4ywM0XlvBrPQi3Q=
-  bob@example.com:
-    encrypted-private-key: e8C/eUqvs8e/RJWLUMc1I3Vm4klUCZ8XVdktj0sGEE117i175oOtkAl3pYt6d4449rcqCM+jew9fq2PT8yZKJpVyKp+822Tl
-    public-key: fHKKyzjDwYOQoxIv+c+t5aj9AyXuW4LJW7fq1R7XGRg=
-audit-log:
-- created key custodian bob@example.com
-- created domain new_domain with owner bob@example.com
-- created secret hello in new_domain
-- created key custodian alice@example.com
-- bob@example.com added owner alice@example.com to new_domain
-```
-
-# Design
-
-PocketProtector is a streamlined, human-centric secret management
+PocketProtector is a streamlined, people-centric secret management
 system, custom built to work with distributed version control systems.
 
 * PocketProtector is a data protection tool, not a change management
@@ -120,26 +227,11 @@ system, custom built to work with distributed version control systems.
   leakage, while maintaining a system as distributed as your version
   management.
 
-## Scenarios
 
-Let's say we have a small engineering team, looking to improve their
-secret management. Our team consists of Engineer Alice, Engineer Bob,
-CEO Claire, and CTO Tom.
+## FAQ
 
-* Starting
-* Add manager
-* Add domain (environment)
-    * Creator becomes first owner
-* Add a secret
-* Grant access to domain
-* Update your passphrase
-* Removing a custodian (i.e., what to do when someone leaves)
-* Updating or removing secrets
-* Rotations
+### Securing Write Access
 
-
-Securing Write Access
----------------------
 PocketProtector does not provide any security against unauthorized writes
 to the protected.yaml file, by design.  Firstly, without any Public Key Infrastructure,
 PocketProtector is not a good basis for cryptographic signatures.  (An attacker

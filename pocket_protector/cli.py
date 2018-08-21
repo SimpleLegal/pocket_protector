@@ -18,8 +18,6 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which secrets have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
-# TODO: passphrase file (for integration with other secret management systems)
-
 _GLOBAL_ARG_MAP = {'file': {'help': 'path to the PocketProtector-managed file, defaults to protected.yaml in the working directory'},
                    'confirm': {'action': 'store_true', 'help': 'show diff before modifying the file'},
                    'non-interactive': {'action': 'store_true', 'help': 'disable falling back to interactive authentication, useful for automation'},
@@ -62,7 +60,7 @@ _SUBCMDS = [('init',
               'args': _INTERACTIVE_ARGS}),
             ('decrypt-domain',
              {'help': 'decrypt and display JSON-formatted cleartext for a domain',
-              'args': _NON_INTERACTIVE_ARGS}),
+              'args': _NON_INTERACTIVE_ARGS + ['domain']}),
             ('rotate-domain-keys',
              {'help': 'rotate the internal keys for a particular domain (must be owner)',
               'args': _NON_INTERACTIVE_ARGS}),
@@ -283,7 +281,7 @@ def _main(kf, action, args):
         modified_kf = kf.set_key_custodian_passphrase(creds, new_passphrase)
     elif action == 'decrypt-domain':
         creds = get_creds()
-        domain_name = raw_input('Domain name: ')
+        domain_name = args.domain
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
         print json.dumps(decrypted_dict, indent=2, sort_keys=True)
     elif action == 'rotate-domain-keys':
