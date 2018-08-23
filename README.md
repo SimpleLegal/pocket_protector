@@ -31,7 +31,7 @@ installation:
 
 ```
 $ pprotect version
-pocket_protector version 18.0.0
+pocket_protector version 18.0.1
 ```
 
 Once the above is working, we're ready to start using PocketProtector!
