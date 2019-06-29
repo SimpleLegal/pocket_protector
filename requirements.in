@@ -1,0 +1,11 @@
+attrs
+boltons
+coverage
+face
+PyNaCl
+pytest
+# ruamel is pinned to a 2018-08-08 version until py3 (where ruamel's ordereddict is a dict again)
+# or we fix the schemas to mutablemappings
+ruamel.yaml==0.15.51
+schema
+tox
