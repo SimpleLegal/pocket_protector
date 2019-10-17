@@ -181,7 +181,7 @@ def _err_map_attrib(item_name):
         def __missing__(self, key):
             raise PPKeyError("no {0} of name {1} (known {0}s are {2})".format(
                 item_name, key, ", ".join(self)))
-    return attr.ib(default=attr.Factory(dict), convert=MissingErrDict)
+    return attr.ib(default=attr.Factory(dict), converter=MissingErrDict)
 
 
 def _deleted(mapping, key):
