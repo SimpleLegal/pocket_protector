@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import os
 import sys
 import json
@@ -9,6 +10,11 @@ import argparse
 
 from ._version import __version__
 from .file_keys import KeyFile, Creds, PPError
+
+try:
+    input = raw_input  # Python 2
+except NameError:
+    pass  # Python 3
 
 _ANSI_FORE_RED = '\x1b[31m'
 _ANSI_FORE_GREEN = '\x1b[32m'
@@ -151,7 +157,7 @@ class PPCLIError(PPError):
 def main(argv=None):
     argv = argv if argv is not None else sys.argv
     if (len(argv) > 1 and argv[1] not in _SUBCMD_SET) and ('-h' in argv or '--help' in argv):
-        print _format_top_level_help(_SUBCMDS)
+        print(_format_top_level_help(_SUBCMDS))
         sys.exit(0)
     prs = get_argparser()
     args = prs.parse_args(argv[1:])
@@ -176,7 +182,7 @@ def main(argv=None):
                     try:
                         os.unlink(file_abs_path)
                     except Exception:
-                        print 'Warning: failed to remove file: %s' % file_abs_path
+                        print('Warning: failed to remove file: %s' % file_abs_path)
                 raise
         except PPCLIError:
             raise
@@ -230,48 +236,48 @@ def _main(kf, action, args):
                                    passphrase_file=passphrase_file_path)
 
     if action == 'init' or action == 'add-key-custodian':
-        print 'Adding new key custodian.'
+        print('Adding new key custodian.')
         creds = _get_new_creds()
         modified_kf = kf.add_key_custodian(creds)
     elif action == 'add-domain':
-        print 'Adding new domain.'
+        print('Adding new domain.')
         creds = get_creds()
-        domain_name = raw_input('Domain name: ')
+        domain_name = input('Domain name: ').strip()
         modified_kf = kf.add_domain(domain_name, creds.name)
     elif action == 'rm-domain':
-        print 'Removing domain.'
-        domain_name = raw_input('Domain name: ')
+        print('Removing domain.')
+        domain_name = input('Domain name: ').strip()
         modified_kf = kf.rm_domain(domain_name)
     elif action == 'add-owner':
-        print 'Adding domain owner.'
+        print('Adding domain owner.')
         creds = get_creds()
-        domain_name = raw_input('Domain name: ')
-        new_owner_name = raw_input('New owner email: ')
+        domain_name = input('Domain name: ').strip()
+        new_owner_name = input('New owner email: ').strip()
         modified_kf = kf.add_owner(domain_name, new_owner_name, creds)
     elif action == 'rm-owner':
-        print 'Removing domain owner.'
-        domain_name = raw_input('Domain name: ')
-        owner_name = raw_input('Owner email: ')
+        print('Removing domain owner.')
+        domain_name = input('Domain name: ').strip()
+        owner_name = input('Owner email: ').strip()
         modified_kf = kf.rm_owner(domain_name, owner_name)
     elif action == 'add-secret':
-        print 'Adding secret value.'
-        domain_name = raw_input('Domain name: ')
-        secret_name = raw_input('Secret name: ')
-        secret_value = raw_input('Secret value: ')
+        print('Adding secret value.')
+        domain_name = input('Domain name: ').strip()
+        secret_name = input('Secret name: ').strip()
+        secret_value = input('Secret value: ').strip()
         modified_kf = kf.add_secret(domain_name, secret_name, secret_value)
     elif action == 'update-secret':
-        print 'Updating secret value.'
-        domain_name = raw_input('Domain name: ')
-        secret_name = raw_input('Secret name: ')
-        secret_value = raw_input('Secret value: ')
+        print('Updating secret value.')
+        domain_name = input('Domain name: ').strip()
+        secret_name = input('Secret name: ').strip()
+        secret_value = input('Secret value: ').strip()
         modified_kf = kf.update_secret(domain_name, secret_name, secret_value)
     elif action == 'rm-secret':
-        print 'Removing secret value.'
-        domain_name = raw_input('Domain name: ')
-        secret_name = raw_input('Secret name: ')
+        print('Removing secret value.')
+        domain_name = input('Domain name: ').strip()
+        secret_name = input('Secret name: ').strip()
         modified_kf = kf.rm_secret(domain_name, secret_name)
     elif action == 'set-key-custodian-passphrase':
-        user_id = raw_input('User email: ')
+        user_id = input('User email: ').strip()
         passphrase = _get_pass(confirm_pass=False, label='Current passphrase')
         creds = Creds(user_id, passphrase)
         _check_creds(kf, creds)
@@ -283,35 +289,35 @@ def _main(kf, action, args):
         creds = get_creds()
         domain_name = args.domain
         decrypted_dict = kf.decrypt_domain(domain_name, creds)
-        print json.dumps(decrypted_dict, indent=2, sort_keys=True)
+        print(json.dumps(decrypted_dict, indent=2, sort_keys=True))
     elif action == 'rotate-domain-keys':
         creds = get_creds()
-        domain_name = raw_input('Domain name: ')
+        domain_name = input('Domain name: ').strip()
         modified_kf = kf.rotate_domain_key(domain_name, creds)
     elif action == 'list-domains':
         domain_names = kf.get_domain_names()
         if domain_names:
-            print '\n'.join(domain_names)
+            print('\n'.join(domain_names))
         else:
-            print '(No domains in protected at %s)' % kf.path
+            print('(No domains in protected at %s)' % kf.path)
     elif action == 'list-domain-secrets':
         domain_name = args.domain
         secret_names = kf.get_domain_secret_names(domain_name)
         if secret_names:
-            print '\n'.join(secret_names)
+            print('\n'.join(secret_names))
         else:
-            print '(No secrets in domain %r of protected at %s)' % (domain_name, kf.path)
+            print('(No secrets in domain %r of protected at %s)' % (domain_name, kf.path))
     elif action == 'list-all-secrets':
         secrets_map = kf.get_all_secret_names()
         if not secrets_map:
-            print '(No secrets in protected at %s)' % kf.path
+            print('(No secrets in protected at %s)' % kf.path)
         else:
             for secret_name in sorted(secrets_map):
                 domain_names = sorted(set(secrets_map[secret_name]))
-                print '%s: %s' % (secret_name, ', '.join(domain_names))
+                print('%s: %s' % (secret_name, ', '.join(domain_names)))
     elif action == 'list-audit-log':
         log_list = kf.get_audit_log()
-        print '\n'.join(log_list)
+        print('\n'.join(log_list))
     else:
         raise NotImplementedError('Unrecognized subcommand: %s' % action)
 
@@ -322,9 +328,9 @@ def _main(kf, action, args):
         diff_lines = _get_colorized_lines(diff_lines)
         print('Changes to be written:\n')
         print('\n'.join(diff_lines) + '\n')
-        do_write = raw_input('Write changes? [y/N] ')
+        do_write = input('Write changes? [y/N] ').strip()
         if not do_write.lower().startswith('y'):
-            print 'Aborting...'
+            print('Aborting...')
             sys.exit(0)
 
     if modified_kf:
@@ -368,7 +374,7 @@ def _check_creds(kf, creds, raise_exc=True):
 
 
 def _get_new_creds(confirm_pass=True):
-    user_id = raw_input('User email: ')
+    user_id = input('User email: ').strip()
     passphrase = _get_pass(confirm_pass=confirm_pass)
     ret = Creds(user_id, passphrase)
     return ret
@@ -379,7 +385,7 @@ def _get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'
     if confirm_pass:
         passphrase2 = getpass.getpass('%s: ' % label2)
         if passphrase != passphrase2:
-            print 'Sorry, passphrases did not match.'
+            print('Sorry, passphrases did not match.')
             sys.exit(1)
     return passphrase
 
@@ -417,7 +423,7 @@ def _get_creds(kf,
 
     if interactive:
         if user is None:
-            user = raw_input('User email: ')
+            user = input('User email: ').strip()
             user_source = 'stdin'
         if passphrase is None:
             passphrase = _get_pass(confirm_pass=False)
