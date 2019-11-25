@@ -4,6 +4,7 @@ protected.yaml, which stores secret data securely.
 
 There are two public classes: KeyFile, and Creds.
 '''
+from __future__ import absolute_import
 import os
 import re
 import base64
@@ -67,12 +68,12 @@ class Creds(object):
 
 
 def _kdf(creds, salt):
-    valet_key = hashlib.sha512(creds.passphrase + salt + creds.name).digest()
+    valet_key = hashlib.sha512(creds.passphrase.encode('utf-8') + salt + creds.name.encode('utf-8')).digest()
     # valet key can be used to share credentials
     # without exposing password
     return nacl.pwhash.argon2id.kdf(
         nacl.public.PrivateKey.SIZE,
-        valet_key, hashlib.sha512(salt + creds.name).digest()[:16],
+        valet_key, hashlib.sha512(salt + creds.name.encode('utf-8')).digest()[:16],
         opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
         memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
 

@@ -1,9 +1,8 @@
-attrs==17.2.0
+attrs==19.1.0
 boltons==17.1.0
 cffi==1.11.2
 pycparser==2.18
 PyNaCl==1.2.0
-ruamel.ordereddict==0.4.13
-ruamel.yaml==0.15.34
+ruamel.yaml==0.16.5
 schema==0.6.6
 six==1.11.0

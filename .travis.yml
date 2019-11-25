@@ -1,0 +1,13 @@
+language: python
+install:
+  - pip install -r requirements-test.txt
+matrix:
+  include:
+    - python: 2.7
+      env:
+       - TOX_ENV=py27
+    - python: 3.6
+      env:
+        - TOX_ENV=py36
+script:
+  - tox -e $TOX_ENV

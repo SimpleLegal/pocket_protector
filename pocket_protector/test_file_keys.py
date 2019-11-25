@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import file_keys
+from __future__ import absolute_import
+from __future__ import print_function
+from . import file_keys
 
 import tempfile
 
@@ -62,9 +64,9 @@ def test_file_keys():
     test.write()
     round_trip = file_keys.KeyFile.from_file(test.path)
     assert round_trip == test
-    print "generated file:"
-    print open(test.path).read()
-    print "..."
+    print("generated file:")
+    print(open(test.path).read())
+    print("...")
 
 
 if __name__ == "__main__":
