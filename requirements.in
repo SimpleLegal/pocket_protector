@@ -4,8 +4,7 @@ coverage
 face
 PyNaCl
 pytest
-# ruamel is pinned to a 2018-08-08 version until py3 (where ruamel's ordereddict is a dict again)
-# or we fix the schemas to mutablemappings
-ruamel.yaml==0.15.51
+# ruamel.ordereddict==0.4.14  # via ruamel.yaml  # this stays commented out so py3 builds work
+ruamel.yaml
 schema
 tox

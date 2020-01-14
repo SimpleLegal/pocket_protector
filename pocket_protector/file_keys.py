@@ -41,24 +41,33 @@ class PPKeyError(PPError, KeyError):
     pass
 
 
-_FILE_SCHEMA = schema.Schema(
+# _coerce to handle ruamel type switcheroo
+def _coerce(type_, sub_schema):
+    return schema.And(schema.Use(type_), sub_schema)
+
+
+def _as_d(sub_schema): return _coerce(dict, sub_schema)
+def _as_l(sub_schema): return _coerce(list, sub_schema)
+
+
+_FILE_SCHEMA = schema.Schema(_as_d(
 {
-    "audit-log": [str],
-    "key-custodians": {
-        schema.Optional(str): {
-            "pwdkm": bytes,
-        },
-    },
-    schema.Optional(schema.Regex("^(?!meta).*$")): {
+    "audit-log": _as_l([str]),
+    "key-custodians": _as_d({
+        schema.Optional(str): _as_d({
+            "pwdkm": str,
+        }),
+    }),
+    schema.Optional(schema.Regex("^(?!meta).*$")): _as_d({
         # allow string names for security domains,
         # but meta is reserved
-        "meta": {
-            "owners": {str: bytes},
-            "public-key": bytes,
-        },
-        schema.Optional(schema.Regex("secret-.*")): bytes,
-    },
-})
+        "meta": _as_d({
+            "owners": _as_d({str: str}),
+            "public-key": str,
+        }),
+        schema.Optional(schema.Regex("secret-.*")): str,
+    }),
+}))
 
 
 # NOTE: this is a public class since it must be passed in
@@ -103,7 +112,7 @@ def _decode(b64):
 
 def _encode(raw):
     'add version 0 byte to everything'
-    return base64.b64encode(b'\0' + raw)
+    return base64.b64encode(b'\0' + raw).decode('utf8')
 
 
 @attr.s(frozen=True)
@@ -180,7 +189,7 @@ def _err_map_attrib(item_name):
         def __missing__(self, key):
             raise PPKeyError("no {0} of name {1} (known {0}s are {2})".format(
                 item_name, key, ", ".join(self)))
-    return attr.ib(default=attr.Factory(dict), convert=MissingErrDict)
+    return attr.ib(default=attr.Factory(dict), converter=MissingErrDict)
 
 
 def _deleted(mapping, key):
@@ -355,7 +364,7 @@ class KeyFile(object):
     def from_file(cls, path):
         'create a new KeyFile from path'
         with open(path, 'rb') as file:
-            contents = file.read()
+            contents = file.read().decode('utf8')
         return cls.from_contents_and_path(contents, path)
 
     @classmethod

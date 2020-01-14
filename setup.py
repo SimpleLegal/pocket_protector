@@ -34,7 +34,7 @@ setup(
                       # ruamel is pinned to a 2018-08-08 version until
                       # py3 and ruamel's ordereddict is a dict again
                       # (or schemas switch to mutablemapping)
-                      'ruamel.yaml==0.15.51',
+                      'ruamel.yaml>=0.15.51',
                       'schema',
                       'face']
 )

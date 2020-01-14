@@ -1,57 +1,63 @@
-# Pocket Protector
+# Pocket Protector 🔏
 
-PocketProtector provides a cryptographically-strong, serverless secret
-management infrastructure. PocketProtector enables *key management as
+Pocket Protector provides a cryptographically-strong, serverless secret
+management infrastructure. Pocket Protector enables *key management as
 code*, securely storing secrets in a versionable format, right
 alongside the corresponding application code.
 
-PocketProtector's approach lets you:
+Pocket Protector's approach lets you:
 
 * Leverage existing user, versioning, and backup systems, with no
   infrastructure to set up
 * Support multiple environments
 * Integrate easily with existing key management systems
   (AWS/Heroku/TravisCI)
+
+Pocket Protector also:
+
 * Minimizes the number of passphrases and keys your team has to
   remember and secure
 * Beats the heck out of hardcoded plaintext secrets!
 
+
 ## Installation
 
-Right now, the easiest way to install PocketProtector across all
+Right now the easiest way to install Pocket Protector across all
 platforms is with `pip`:
 
-```
+```sh
 pip install pocket_protector
 ```
 
-This will install a command-line application, `pocket_protector`,
+This will install the command-line application `pocket_protector`,
 conveniently shortened to `pprotect`, which you can use to test your
 installation:
 
-```
+```sh
 $ pprotect version
-pocket_protector version 18.0.0
+pocket_protector version 18.0.1
 ```
 
-Once the above is working, we're ready to start using PocketProtector!
+Once the above is working, we're ready to start using Pocket Protector!
+
 
 ## Usage
 
-PocketProtector aims to be as easy to use as a secret management
+Pocket Protector aims to be as easy to use as a secret management
 system can get. That said, understanding security takes time, so be
-sure to go beyond the quick start and reference below, and read
-[our User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
-as well as the docs below.
+sure to go beyond the quick start and reference below, and read our
+[User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
+as well.
+
 
 ### Quick start
 
-PocketProtector's CLI is its primary interface. It presents a compact
+Pocket Protector's CLI is its primary interface. It presents a compact
 set of commands, each representing one action you might want to take
 on a secret store. Basic usage starts on your laptop, inside your
 checked out code repository:
 
-```
+```sh
 # create a new protected file
 pprotect init
 
@@ -72,6 +78,7 @@ When you're done updating the secret store, simply `git commit` (or
 equivalent) to save your changes. Should you make any mistakes, use
 your VCS to revert the changes.
 
+
 ### Passing credentials
 
 By default, the `pocket_protector` command prompts you for credentials
@@ -79,26 +86,29 @@ when necessary. But convenience and automation both demand more
 options, highlighted here:
 
 * Command-line Flags
-    * `-u / --user USER_EMAIL` - specifies the user email for subcommands which require it
-    * `--passphrase-file PATH` - specifies a path to a readable file
-      which contains the passphrase (useful for mount-based key
-      management, like Docker)
-    * `--domain DOMAIN` - specifies the name of the domain
-    * `--non-interactive` - causes the command to fail when credentials cannot be gotten by other means
+  * `-u / --user USER_EMAIL` - specifies the user email for subcommands which require it
+  * `--passphrase-file PATH` - specifies a path to a readable file
+    which contains the passphrase (useful for mount-based key
+    management, like Docker)
+  * `--domain DOMAIN` - specifies the name of the domain
+  * `--non-interactive` - causes the command to fail when credentials cannot be gotten by other means
 
 * Environment variables
-   * `PPROTECT_USER` - environment variable which contains the user email
-   * `PPROTECT_PASSPHRASE` - environment variable which contains the
-     passphrase (useful for environment variable-based key management,
-     used by AWS/Heroku/many CI systems)
+  * `PPROTECT_USER` - environment variable which contains the user email
+  * `PPROTECT_PASSPHRASE` - environment variable which contains the
+    passphrase (useful for environment variable-based key management,
+    used by AWS/Heroku/many CI systems)
 
 In all cases, flags take precedence over environment variables, and
 both take precedence over and bypass interactive prompts. In the event
-an incorrect credential is passed, pocket_protector does *not*
+an incorrect credential is passed, `pocket_protector` does *not*
 automatically check other sources.
 
-See [our User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
+
+See our
+[User Guide](https://github.com/SimpleLegal/pocket_protector/blob/master/USER_GUIDE.md)
 for more usage tips.
+
 
 ### Command summary
 
@@ -133,12 +143,13 @@ Commands:
   update-secret         update an existing secret in a specified domain
 ```
 
+
 ## Design
 
-The theory of operation is that the protected.yaml file consists of
-"key domains" at the root level.  Each domain stores data encrypted by
+The theory of operation is that the `protected.yaml` file consists of
+"key domains" at the root level. Each domain stores data encrypted by
 a keypair. The public key of the keypair is stored in plaintext, so
-that anyone may encrypt and add a new secret.  The private key is
+that anyone may encrypt and add a new secret. The private key is
 encrypted with the owner's passphrase. The owners are known as "key
 custodians", and their private keys are protected by passphrases.
 
@@ -196,33 +207,35 @@ key-custodians:
     encrypted-private-key: [b64-bytes]
 ```
 
+
 ### Threat model
 
 An attacker is presumed to be able to read but not write the contents
-of protected.yaml.  This could happen because a developrs laptop
-is compromised, github credentials are compromised, or (most likely)
-git history is accidentally pushed to a publically acessible repo.
+of `protected.yaml`. This could happen because a developer's laptop
+is compromised, GitHub credentials are compromised, or (most likely)
+Git history is accidentally pushed to a publicly acessible repo.
 
 With read access, an attacker gets environment and secret names,
 and which secrets are used in which environments.
 
-Neither the file as a whole nore individual entries are signed,
+Neither the file as a whole nor individual entries are signed,
 since the security model assumes an attacker does not have
 write access.
 
+
 ### Notes
 
-PocketProtector is a streamlined, people-centric secret management
+Pocket Protector is a streamlined, people-centric secret management
 system, custom built to work with distributed version control systems.
 
-* PocketProtector is a data protection tool, not a change management
+* Pocket Protector is a data protection tool, not a change management
   tool. While it has convenient affordances like an informal
-  audit_log, PocketProtector is meant to be used in conjunction with
+  `audit_log`, Pocket Protector is meant to be used in conjunction with
   your version management tool. Signed commits are a particularly good
   complement.
-* PocketProtector is designed for single-user usage. This is not a
+* Pocket Protector is designed for single-user usage. This is not a
   scaling limitation as much as it is a scaling feature. Single-user
-  means that every pprotect command needs at most one credentialed
+  means that every `pprotect` command needs at most one credentialed
   user present. No sideband communication is required, minimizing
   leakage, while maintaining a system as distributed as your version
   management.
@@ -230,17 +243,18 @@ system, custom built to work with distributed version control systems.
 
 ## FAQ
 
+
 ### Securing Write Access
 
-PocketProtector does not provide any security against unauthorized writes
-to the protected.yaml file, by design.  Firstly, without any Public Key Infrastructure,
-PocketProtector is not a good basis for cryptographic signatures.  (An attacker
+Pocket Protector does not provide any security against unauthorized writes
+to the `protected.yaml` file, by design. Firstly, without any Public Key Infrastructure,
+Pocket Protector is not a good basis for cryptographic signatures. (An attacker
 that modifies the file could also replace the signing keypair with their own;
 the only way to detect this would be to have a data-store outside of the file.)
 
-Secondly -- and more importantly -- the git or mercurial repository already has
-good controls around write access.  All changes are auditable, authenticated with
-ssh keypairs or user passphrases.  For futher security, consider using signed commits:
+Secondly -- and more importantly -- the Git or Mercurial repository already has
+good controls around write access. All changes are auditable, authenticated with
+ssh keypairs or user passphrases. For futher security, consider using signed commits:
 
 * https://git-scm.com/book/id/v2/Git-Tools-Signing-Your-Work
 * https://help.github.com/articles/signing-commits-using-gpg/
