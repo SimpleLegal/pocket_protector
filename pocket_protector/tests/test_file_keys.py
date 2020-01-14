@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-from . import file_keys
+from pocket_protector import file_keys
 
 import tempfile
 
