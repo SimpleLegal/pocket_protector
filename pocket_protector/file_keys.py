@@ -75,14 +75,14 @@ _FILE_SCHEMA = schema.Schema(_as_d(
 class Creds(object):
     "Stores credentials used to open a KeyFile"
     name = attr.ib(validator=attr.validators.instance_of(unicode))
-    passphrase = attr.ib(validator=attr.validators.instance_of(bytes))
+    passphrase = attr.ib(validator=attr.validators.instance_of(unicode))
     name_source = attr.ib(default=None)
     passphrase_source = attr.ib(default=None)
 
 
 def _kdf(creds, salt):
     name = creds.name.encode('utf8')
-    passphrase = creds.passphrase
+    passphrase = creds.passphrase.encode('utf8')
 
     valet_key = hashlib.sha512(passphrase + salt + name).digest()
     # valet key can be used to share credentials
