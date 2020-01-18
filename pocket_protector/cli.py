@@ -19,10 +19,15 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # added/set by others, then produced reports on which secrets have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
 
+# TODO: integrate new face error raising instead of prints (when printing errors)
+
 try:
     raw_input
 except NameError:
+    # py3
     raw_input = input
+    unicode = str
+
 
 class PPCLIError(PPError):
     "Raised when there's an error from user input or other CLI interaction"
@@ -61,20 +66,20 @@ def _get_colorized_lines(lines):
     return ret
 
 
-def _get_text(prompt):
-    ret = raw_input(prompt)
-    ret = ret.decode('utf8') if hasattr(ret, 'decode') else ret
-    return ret
+def _get_text(inp):
+    if not isinstance(inp, unicode):
+        return inp.decode('utf8')
+    return inp
 
 
-def _get_bytes(prompt):
+def _input_text(prompt):
     ret = raw_input(prompt)
-    ret = ret.encode('utf8') if hasattr(ret, 'encode') else ret
+    ret = _get_text(ret)
     return ret
 
 
 def _get_new_creds(confirm_pass=True):
-    user_id = _get_text('User email: ')
+    user_id = _input_text('User email: ')
     passphrase = _get_pass(confirm_pass=confirm_pass)
     ret = Creds(user_id, passphrase)
     return ret
@@ -124,13 +129,13 @@ def _get_creds(kf,
 
     if interactive:
         if user is None:
-            user = _get_text('User email: ')
+            user = _input_text('User email: ')
             user_source = 'stdin'
         if passphrase is None:
             passphrase = _get_pass(confirm_pass=False)
             passphrase_source = 'stdin'
 
-    creds = Creds(user, passphrase,
+    creds = Creds(_get_text(user), _get_text(passphrase),
                   name_source=user_source, passphrase_source=passphrase_source)
     _check_creds(kf, creds)
 
@@ -138,26 +143,27 @@ def _get_creds(kf,
 
 
 def _check_creds(kf, creds, raise_exc=True):
-    if not kf.check_creds(creds):
-        msg = 'Invalid user email'
-        if creds.name_source:
-            msg += ' (from %s)' % creds.name_source
-        msg += ' or passphrase'
-        if creds.passphrase_source:
-            msg += ' (from %s)' % creds.passphrase_source
-        msg += '. Check credentials and try again.'
-        empty_fields = []
-        if creds.name == '':
-            empty_fields.append('user ID')
-        if creds.passphrase == '':
-            empty_fields.append('passphrase')
-        if empty_fields:
-            msg += ' (Warning: Empty ' + ' and '.join(empty_fields) + '.)'
-
-        if raise_exc:
-            raise PPCLIError(msg, 1)
+    if kf.check_creds(creds):
+        return True
+    elif not raise_exc:
         return False
-    return True
+
+    msg = 'Invalid user email'
+    if creds.name_source:
+        msg += ' (from %s)' % creds.name_source
+    msg += ' or passphrase'
+    if creds.passphrase_source:
+        msg += ' (from %s)' % creds.passphrase_source
+    msg += '. Check credentials and try again.'
+    empty_fields = []
+    if creds.name == '':
+        empty_fields.append('user ID')
+    if creds.passphrase == '':
+        empty_fields.append('passphrase')
+    if empty_fields:
+        msg += ' (Warning: Empty ' + ' and '.join(empty_fields) + '.)'
+
+    raise PPCLIError(msg, 1)
 
 
 def _get_cmd(prepare=False):
@@ -237,7 +243,7 @@ def add_key_custodian(wkf):
 def add_domain(wkf, creds):
     'add a new domain to the protected'
     print('Adding new domain.')
-    domain_name = _get_text('Domain name: ')
+    domain_name = _input_text('Domain name: ')
 
     return wkf.add_domain(domain_name, creds.name)
 
@@ -245,56 +251,56 @@ def add_domain(wkf, creds):
 def rm_domain(wkf):
     'remove a domain and all of its keys from the protected'
     print('Removing domain.')
-    domain_name = _get_text('Domain name: ')
+    domain_name = _input_text('Domain name: ')
     return wkf.rm_domain(domain_name)
 
 
 def add_owner(wkf, creds):
     'add a key custodian to the owner list of a specific domain'
     print('Adding domain owner.')
-    domain_name = _get_text('Domain name: ')
-    new_owner_name = _get_text('New owner email: ')
+    domain_name = _input_text('Domain name: ')
+    new_owner_name = _input_text('New owner email: ')
     return wkf.add_owner(domain_name, new_owner_name, creds)
 
 
 def rm_owner(wkf):
     'remove a key custodian from the owner list of a domain'
     print('Removing domain owner.')
-    domain_name = _get_text('Domain name: ')
-    owner_name = _get_text('Owner email: ')
+    domain_name = _input_text('Domain name: ')
+    owner_name = _input_text('Owner email: ')
     return wkf.rm_owner(domain_name, owner_name)
 
 
 def add_secret(wkf):
     'add a secret to a domain'
     print('Adding secret value.')
-    domain_name = _get_text('Domain name: ')
-    secret_name = _get_text('Secret name: ')
-    secret_value = _get_bytes('Secret value: ')
+    domain_name = _input_text('Domain name: ')
+    secret_name = _input_text('Secret name: ')
+    secret_value = _input_text('Secret value: ')
     return wkf.add_secret(domain_name, secret_name, secret_value)
 
 
 def update_secret(wkf):
     'update a secret value in a domain'
     print('Updating secret value.')
-    domain_name = _get_text('Domain name: ')
-    secret_name = _get_text('Secret name: ')
-    secret_value = _get_bytes('Secret value: ')
+    domain_name = _input_text('Domain name: ')
+    secret_name = _input_text('Secret name: ')
+    secret_value = _input_text('Secret value: ')
     return wkf.update_secret(domain_name, secret_name, secret_value)
 
 
 def rm_secret(wkf):
     'remove a secret from a domain'
     print('Updating secret value.')
-    domain_name = _get_text('Domain name: ')
-    secret_name = _get_text('Secret name: ')
-    secret_value = _get_bytes('Secret value: ')
+    domain_name = _input_text('Domain name: ')
+    secret_name = _input_text('Secret name: ')
+    secret_value = _input_text('Secret value: ')
     return wkf.update_secret(domain_name, secret_name, secret_value)
 
 
 def set_key_custodian_passphrase(wkf):
     'update a key custodian passphrase'
-    user_id = _get_text('User email: ')
+    user_id = _input_text('User email: ')
     passphrase = _get_pass(confirm_pass=False, label='Current passphrase')
     creds = Creds(user_id, passphrase)
     _check_creds(wkf, creds)
@@ -306,7 +312,7 @@ def set_key_custodian_passphrase(wkf):
 
 def rotate_domain_keys(wkf, creds):
     'rotate the internal encryption keys for a given domain'
-    domain_name = _get_text('Domain name: ')
+    domain_name = _input_text('Domain name: ')
     return wkf.rotate_domain_key(domain_name, creds)
 
 
@@ -424,7 +430,7 @@ def mw_write_kf(next_, kf, confirm):
         diff_lines = _get_colorized_lines(diff_lines)
         print('Changes to be written:\n')
         print('\n'.join(diff_lines) + '\n')
-        do_write = _get_text('Write changes? [y/N] ')
+        do_write = _input_text('Write changes? [y/N] ')
         if not do_write.lower().startswith('y'):
             print('Aborting...')
             sys.exit(0)

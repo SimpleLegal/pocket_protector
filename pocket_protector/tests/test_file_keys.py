@@ -26,26 +26,26 @@ def test_file_keys():
     chk(test)
 
     try:
-        test3f = test = test.add_secret('new_domain', '$brokenkey', b'world')
+        test3f = test = test.add_secret('new_domain', '$brokenkey', 'world')
     except ValueError:
         pass
     else:
-        raise RuntimeError('failed to catch invalid flag name')
+        raise RuntimeError('failed to catch invalid domain name')
 
-    test3a = test = test.add_secret('new_domain', 'hello', b'world')
+    test3a = test = test.add_secret('new_domain', 'hello', 'world')
     chk(test)
-    test3b = test = test.update_secret('new_domain', 'hello', b'world2')
+    test3b = test = test.update_secret('new_domain', 'hello', 'world2')
     chk(test)
-    test4 = test = test.set_secret('new_domain', 'hello', b'world')
+    test4 = test = test.set_secret('new_domain', 'hello', 'world')
     chk(test)
     test4a = test = test.rm_secret('new_domain', 'hello')
     chk(test)
-    test4b = test = test.set_secret('new_domain', 'hello', b'world')
+    test4b = test = test.set_secret('new_domain', 'hello', 'world')
     chk(test)
-    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == b'world'
-    test5 = test = test.set_secret('new_domain', 'hello', b'better-world')
+    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'world'
+    test5 = test = test.set_secret('new_domain', 'hello', 'better-world')
     chk(test)
-    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == b'better-world'
+    assert test.decrypt_domain('new_domain', bob_creds)['hello'] == 'better-world'
     test6 = test = test.add_key_custodian(alice_creds)
     chk(test)
     test7 = test = test.add_owner('new_domain', alice_creds.name, bob_creds)
@@ -67,13 +67,3 @@ def test_file_keys():
     print("generated file:")
     print(open(test.path).read())
     print("...")
-
-
-if __name__ == "__main__":
-    try:
-        test_file_keys()
-    except:
-        import pdb
-        import traceback
-        traceback.print_exc()
-        pdb.post_mortem()

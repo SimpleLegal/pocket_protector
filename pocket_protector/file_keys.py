@@ -232,7 +232,7 @@ class _EncryptedKeyDomain(object):
             key_custodian, creds))
         secrets = {}
         for name, val in self._secrets.items():
-            secrets[name] = box.decrypt(val)
+            secrets[name] = box.decrypt(val).decode('utf8')
         return _KeyDomain(secrets)
 
     def set_secret(self, name, value):
@@ -245,7 +245,7 @@ class _EncryptedKeyDomain(object):
 
         secrets = dict(self._secrets)
         box = nacl.public.SealedBox(self._pub_key)
-        secrets[name] = box.encrypt(value)
+        secrets[name] = box.encrypt(value.encode('utf8'))
         return attr.evolve(self, secrets=secrets)
 
     def add_secret(self, name, value):
@@ -560,7 +560,7 @@ class KeyFile(object):
         except KeyError:
             return False
         try:
-            key_custodian.decrypt_as(creds, key_custodian.encrypt_for('\0'))
+            key_custodian.decrypt_as(creds, key_custodian.encrypt_for(b'\0'))
         except Exception:  # TODO: what crypto error?
             return False
         return True

@@ -3,6 +3,8 @@ branch = True
 source =
     pocket_protector
     ../pocket_protector
+omit =
+    flycheck_*.py
 
 [paths]
 source =
