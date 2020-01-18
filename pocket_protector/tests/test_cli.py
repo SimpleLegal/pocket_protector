@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import os
 import json
 import ruamel.yaml
 
@@ -31,11 +32,23 @@ def test_cli(tmp_path, _fast_crypto):
 
     assert cc.run('pprotect version').stdout.startswith('pocket_protector version')
 
-    protected_path = str(tmp_path) + '/protected.yaml'
+    tmp_path = str(tmp_path)
+    protected_path = tmp_path + '/protected.yaml'
+
+    # fail init and ensure that file isn't created
+    res = cc.run('pprotect init --file %s' % protected_path,
+                 input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE + 'nope'])
+    assert res.exit_code == 1
+    assert not os.path.exists(protected_path)
 
     res = cc.run('pprotect init --file %s' % protected_path,
                  input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE])
     assert res.exit_code == 0
+
+    # check we can only create it once
+    res = cc.run('pprotect init --file %s' % protected_path,
+                 input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE])
+    assert res.exit_code == 2
 
     file_data = ruamel.yaml.YAML().load(open(protected_path).read())
     assert list(file_data['key-custodians'])[0] == KURT_EMAIL
@@ -87,6 +100,10 @@ def test_cli(tmp_path, _fast_crypto):
     res = cc.run('pprotect add-owner', input=[DOMAIN_NAME, MH_EMAIL])
     assert res.exit_code == 0
 
+    # missing protected
+    res = cc.run('pprotect list-all-secrets', chdir=tmp_path + '/..')
+    assert res.exit_code == 2
+
     res = cc.run('pprotect list-all-secrets')
     assert SECRET_NAME in res.stdout
 
@@ -102,13 +119,30 @@ def test_cli(tmp_path, _fast_crypto):
 
     # test bad creds
     res = cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME],
-                 env={'PPROTECT_PASSPHRASE': 'nope'})
+                 env={'PPROTECT_USER': None, 'PPROTECT_PASSPHRASE': 'nope'},
+                 input=[KURT_EMAIL])
     assert res.exit_code == 1
 
     res = cc.run('pprotect set-key-custodian-passphrase',
                  input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE, KURT_PHRASE + 'nope'])
     assert res.exit_code == 1
     assert 'did not match' in res.stdout  # TODO: may change to stderr
+
+    # correctly reset passphrase
+    new_kurt_phrase = KURT_PHRASE + 'yep'
+    res = cc.run('pprotect set-key-custodian-passphrase',
+                 input=[KURT_EMAIL, KURT_PHRASE, new_kurt_phrase, new_kurt_phrase])
+    assert res.exit_code == 0
+
+    # try new passphrase with a passphrase file why not
+    ppfile_path = str(tmp_path) + 'tmp_passphrase'
+    with open(ppfile_path, 'wb') as f:
+        f.write(new_kurt_phrase.encode('utf8'))
+    res = cc.run(['pprotect', 'decrypt-domain', '--non-interactive',
+                  '--passphrase-file', ppfile_path, DOMAIN_NAME])
+    assert res.exit_code == 0
+    res_data = json.loads(res.stdout)
+    assert res_data[SECRET_NAME] == SECRET_VALUE
 
     # test removals
     res = cc.run(['pprotect', 'rm-owner'], input=[DOMAIN_NAME, MH_EMAIL])
