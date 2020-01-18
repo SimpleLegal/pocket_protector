@@ -92,7 +92,7 @@ def _get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'
         if passphrase != passphrase2:
             print('Sorry, passphrases did not match.')
             sys.exit(1)
-    passphrase = passphrase.decode('utf-8') if hasattr(passphrase, 'decode') else passphrase
+    passphrase = _get_text(passphrase)
     return passphrase
 
 
@@ -294,8 +294,7 @@ def rm_secret(wkf):
     print('Updating secret value.')
     domain_name = _input_text('Domain name: ')
     secret_name = _input_text('Secret name: ')
-    secret_value = _input_text('Secret value: ')
-    return wkf.update_secret(domain_name, secret_name, secret_value)
+    return wkf.rm_secret(domain_name, secret_name)
 
 
 def set_key_custodian_passphrase(wkf):

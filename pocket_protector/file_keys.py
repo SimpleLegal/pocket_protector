@@ -70,6 +70,9 @@ _FILE_SCHEMA = schema.Schema(_as_d(
 }))
 
 
+OPSLIMIT = nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE
+MEMLIMIT = nacl.pwhash.argon2id.MEMLIMIT_MODERATE
+
 # NOTE: this is a public class since it must be passed in
 @attr.s(frozen=True)
 class Creds(object):
@@ -90,8 +93,8 @@ def _kdf(creds, salt):
     return nacl.pwhash.argon2id.kdf(
         nacl.public.PrivateKey.SIZE,
         valet_key, hashlib.sha512(salt + name).digest()[:16],
-        opslimit=nacl.pwhash.argon2id.OPSLIMIT_SENSITIVE,
-        memlimit=nacl.pwhash.argon2id.MEMLIMIT_MODERATE)
+        opslimit=OPSLIMIT,
+        memlimit=MEMLIMIT)
 
 
 def _decode(b64):

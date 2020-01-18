@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import pytest
+
 from pocket_protector import file_keys
 
 import tempfile
@@ -25,12 +27,8 @@ def test_file_keys():
     test3 = test = test.add_domain('new_domain', bob_creds.name)
     chk(test)
 
-    try:
+    with pytest.raises(ValueError):
         test3f = test = test.add_secret('new_domain', '$brokenkey', 'world')
-    except ValueError:
-        pass
-    else:
-        raise RuntimeError('failed to catch invalid domain name')
 
     test3a = test = test.add_secret('new_domain', 'hello', 'world')
     chk(test)
