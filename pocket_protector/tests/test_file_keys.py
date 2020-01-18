@@ -9,7 +9,7 @@ from pocket_protector import file_keys
 import tempfile
 
 
-def test_file_keys():
+def test_file_keys(_fast_crypto):
     bob_creds = file_keys.Creds('bob@example.com', 'super-secret')
     alice_creds = file_keys.Creds('alice@example.com', 'super-duper-secret')
 

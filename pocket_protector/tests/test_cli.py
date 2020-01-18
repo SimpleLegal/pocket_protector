@@ -2,29 +2,12 @@
 
 from __future__ import unicode_literals
 
-import nacl
 import json
 import ruamel.yaml
 
-import pytest
 from face import CommandChecker
 
 from pocket_protector import cli
-import pocket_protector.file_keys
-
-@pytest.fixture
-def fast_crypto():
-    old_opslimit = pocket_protector.file_keys.OPSLIMIT
-    old_memlimit = pocket_protector.file_keys.MEMLIMIT
-
-    pocket_protector.file_keys.OPSLIMIT = nacl.pwhash.OPSLIMIT_MIN
-    pocket_protector.file_keys.MEMLIMIT = nacl.pwhash.MEMLIMIT_MIN
-
-    yield
-
-    pocket_protector.file_keys.OPSLIMIT = old_opslimit
-    pocket_protector.file_keys.MEMLIMIT = old_memlimit
-    return
 
 
 def test_prepare():
@@ -41,7 +24,8 @@ SECRET_NAME = 'secret-name'
 SECRET_VALUE = u'secrët-value'
 
 
-def test_cli(tmp_path, fast_crypto):
+# _fast_crypto from conftest
+def test_cli(tmp_path, _fast_crypto):
     cmd = cli._get_cmd()
     cc = CommandChecker(cmd, reraise=True)
 
