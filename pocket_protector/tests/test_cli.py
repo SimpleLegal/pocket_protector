@@ -4,8 +4,9 @@ from __future__ import unicode_literals
 
 import os
 import json
-import ruamel.yaml
+import subprocess
 
+import ruamel.yaml
 from face import CommandChecker
 
 from pocket_protector import cli
@@ -153,3 +154,14 @@ def test_cli(tmp_path, _fast_crypto):
 
     res = cc.run(['pprotect', 'rm-domain', '--confirm'], input=[DOMAIN_NAME, 'y'])
     assert res.exit_code == 0
+
+
+def test_main(tmp_path):
+    # TODO: pytest-cov knows how to make coverage work across
+    # subprocess boundaries...
+    os.chdir(str(tmp_path))
+    res = subprocess.check_output(['pprotect', 'version'])
+    assert res.decode('utf8').startswith('pocket_protector version')
+
+    res = subprocess.check_output(['pocket_protector', 'version'])
+    assert res.decode('utf8').startswith('pocket_protector version')

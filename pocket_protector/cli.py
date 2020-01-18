@@ -222,7 +222,7 @@ def _get_cmd(prepare=False):
     return cmd
 
 
-def main(argv=None):
+def main(argv=None):  # pragma: no cover  (see note in tests.test_cli.test_main)
     cmd = _get_cmd()
 
     cmd.run(argv=argv)  # exit behavior is handled by mw_exit_handler
