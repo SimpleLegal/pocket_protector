@@ -6,7 +6,7 @@ import json
 import getpass
 import difflib
 
-from face import Command, Flag, face_middleware
+from face import Command, Flag, face_middleware, CommandLineError, UsageError
 
 from ._version import __version__
 from .file_keys import KeyFile, Creds, PPError
@@ -29,18 +29,9 @@ except NameError:
     unicode = str
 
 
-class PPCLIError(PPError):
-    "Raised when there's an error from user input or other CLI interaction"
-    def __init__(self, msg=None, exit_code=1):
-        self.msg = msg
-        self.exit_code = exit_code
-        if msg:
-            super(PPCLIError, self).__init__(msg)
-        return
-
 def _create_protected(path):
     if os.path.exists(path):
-        raise PPCLIError('Protected file already exists: %s' % path, 2)
+        raise UsageError('Protected file already exists: %s' % path, 2)
     open(path, 'wb').close()
     kf = KeyFile(path=path)
     # TODO: add audit log entry for creation date
@@ -51,7 +42,7 @@ def _create_protected(path):
 
 def _ensure_protected(path):
     if not os.path.exists(path):
-        raise PPCLIError('Protected file not found: %s' % path, 2)
+        raise UsageError('Protected file not found: %s' % path, 2)
     kf = KeyFile.from_file(path)
     return kf
 
@@ -104,9 +95,8 @@ def _get_creds(kf,
                user_env_var='PPROTECT_USER',
                pass_env_var='PPROTECT_PASSPHRASE'):
     if not interactive and not check_env:
-        # TODO: UsageError
-        raise RuntimeError('expected at least one of check_env'
-                           ' and interactive to be True')
+        raise UsageError('expected at least one of check_env'
+                         ' and interactive to be True', 2)
     user_source = 'argument'
     passphrase, passphrase_source = None, None
     if passphrase_file:
@@ -118,7 +108,7 @@ def _get_creds(kf,
                 msg = '%s while reading passphrase from file at "%s"' % (ioe.strerror, passphrase_file)
             else:
                 msg = 'Failed to read passphrase from file at "%s"' % passphrase_file
-            raise PPCLIError(msg=msg)
+            raise UsageError(msg=msg)
         else:
             passphrase_source = "passphrase file: %s" % passphrase_file
     if user is None and user_env_var:
@@ -143,11 +133,9 @@ def _get_creds(kf,
     return creds
 
 
-def _check_creds(kf, creds, raise_exc=True):
+def _check_creds(kf, creds):
     if kf.check_creds(creds):
         return True
-    elif not raise_exc:
-        return False
 
     msg = 'Invalid user email'
     if creds.name_source:
@@ -164,7 +152,7 @@ def _check_creds(kf, creds, raise_exc=True):
     if empty_fields:
         msg += ' (Warning: Empty ' + ' and '.join(empty_fields) + '.)'
 
-    raise PPCLIError(msg, 1)
+    raise UsageError(msg, 1)
 
 
 def _get_cmd(prepare=False):
@@ -207,10 +195,10 @@ def _get_cmd(prepare=False):
     cmd.add(set_key_custodian_passphrase)
     cmd.add(rotate_domain_keys)
 
-    cmd.add(decrypt_domain, posargs=1)
+    cmd.add(decrypt_domain, posargs={'count': 1, 'provides': 'domain_name'})
 
     cmd.add(list_domains)
-    cmd.add(list_domain_secrets, posargs=1)
+    cmd.add(list_domain_secrets, posargs={'count': 1, 'provides': 'domain_name'})
     cmd.add(list_all_secrets)
     cmd.add(list_audit_log)
 
@@ -326,9 +314,8 @@ def print_version():
     sys.exit(0)
 
 
-def decrypt_domain(kf, creds, posargs_):
+def decrypt_domain(kf, creds, domain_name):
     'output the decrypted contents of a domain in JSON format'
-    domain_name = posargs_[0]
     decrypted_dict = kf.decrypt_domain(domain_name, creds)
     print(json.dumps(decrypted_dict, indent=2, sort_keys=True))
     return 0
@@ -344,14 +331,14 @@ def list_domains(kf):
     return
 
 
-def list_domain_secrets(kf, posargs_):
+def list_domain_secrets(kf, domain_name):
     'print a list of secret names for a given domain'
-    domain = posargs_[0]  # TODO: posargs provides
-    secret_names = kf.get_domain_secret_names(domain)
+    secret_names = kf.get_domain_secret_names(domain_name)
     if secret_names:
         print('\n'.join(secret_names))
     else:
-        print('(No secrets in domain %r of protected at %s)' % (domain, kf.path))
+        print('(No secrets in domain %r of protected at %s)'
+              % (domain_name, kf.path))
     return
 
 
@@ -415,7 +402,7 @@ def mw_ensure_kf(next_, file, subcmds_):
 @face_middleware(provides=['wkf'], optional=True)
 def mw_write_kf(next_, kf, confirm):
     if not os.access(kf.path, os.W_OK):
-        raise PPCLIError('expected %r to be a writable file. Check the'
+        raise UsageError('expected %r to be a writable file. Check the'
                          ' permissions and try again.' % kf.path)
 
     modified_kf = next_(wkf=kf)
@@ -446,20 +433,15 @@ def mw_exit_handler(next_):
     try:
         try:
             status = next_() or 0
-        except PPCLIError:
-            raise
         except PPError as ppe:
-            raise PPCLIError(ppe.args[0])
+            raise UsageError(ppe.args[0])
     except KeyboardInterrupt:
+        print('')
         status = 130
-        print('')
     except EOFError:
-        status = 1
         print('')
-    except PPCLIError as ppce:
-        if ppce.args:
-            print('Error: ' + '; '.join([str(a) for a in ppce.args]))
-        status = ppce.exit_code
+        status = 1
 
     sys.exit(status)
+
     return

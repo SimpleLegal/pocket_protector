@@ -145,6 +145,10 @@ def test_cli(tmp_path, _fast_crypto):
     res_data = json.loads(res.stdout)
     assert res_data[SECRET_NAME] == SECRET_VALUE
 
+    # test mutual exclusivity of check env and interactive
+    res = cc.run(['pprotect', 'decrypt-domain', '--non-interactive', '--ignore-env', DOMAIN_NAME])
+    assert res.exit_code == 2
+
     # test removals
     res = cc.run(['pprotect', 'rm-owner'], input=[DOMAIN_NAME, MH_EMAIL])
     assert res.exit_code == 0
