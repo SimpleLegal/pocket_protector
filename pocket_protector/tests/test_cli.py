@@ -41,7 +41,8 @@ def test_cli(tmp_path, _fast_crypto):
     assert list(file_data['key-custodians'])[0] == KURT_EMAIL
     assert len(file_data['audit-log']) == 1
 
-    res = cc.run('pprotect list-audit-log')
+    res = cc.run('pprotect list-audit-log --file %s' % protected_path)
+    assert res.exit_code == 0
     assert len(res.stdout.splitlines()) == 1
 
     # make a new cc, with env and tmp_path baked in (also tests
@@ -63,6 +64,10 @@ def test_cli(tmp_path, _fast_crypto):
     res = cc.run(['pprotect', 'update-secret'],
                  input=[DOMAIN_NAME, SECRET_NAME, SECRET_VALUE])
     assert res.exit_code == 0
+
+    res = cc.run(['pprotect', 'list-domain-secrets', DOMAIN_NAME])
+    assert res.exit_code == 0
+    assert res.stdout == SECRET_NAME + '\n'
 
     res = cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME])
     assert res.exit_code == 0

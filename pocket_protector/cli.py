@@ -104,6 +104,7 @@ def _get_creds(kf,
                user_env_var='PPROTECT_USER',
                pass_env_var='PPROTECT_PASSPHRASE'):
     if not interactive and not check_env:
+        # TODO: UsageError
         raise RuntimeError('expected at least one of check_env'
                            ' and interactive to be True')
     user_source = 'argument'
@@ -345,7 +346,7 @@ def list_domains(kf):
 
 def list_domain_secrets(kf, posargs_):
     'print a list of secret names for a given domain'
-    domain = posargs_[0]
+    domain = posargs_[0]  # TODO: posargs provides
     secret_names = kf.get_domain_secret_names(domain)
     if secret_names:
         print('\n'.join(secret_names))
