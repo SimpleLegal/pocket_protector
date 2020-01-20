@@ -6,7 +6,7 @@ import json
 import getpass
 import difflib
 
-from face import Command, Flag, face_middleware, CommandLineError, UsageError
+from face import Command, Flag, face_middleware, CommandLineError, UsageError, echo, prompt
 
 from ._version import __version__
 from .file_keys import KeyFile, Creds, PPError
@@ -22,11 +22,16 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # TODO: integrate new face error raising instead of prints (when printing errors)
 
 try:
-    raw_input
+    unicode
 except NameError:
     # py3
-    raw_input = input
     unicode = str
+
+
+def _get_text(inp):
+    if not isinstance(inp, unicode):
+        return inp.decode('utf8')
+    return inp
 
 
 def _create_protected(path):
@@ -57,34 +62,11 @@ def _get_colorized_lines(lines):
     return ret
 
 
-def _get_text(inp):
-    if not isinstance(inp, unicode):
-        return inp.decode('utf8')
-    return inp
-
-
-def _input_text(prompt):
-    ret = raw_input(prompt)
-    ret = _get_text(ret)
-    return ret
-
-
-def _get_new_creds(confirm_pass=True):
-    user_id = _input_text('User email: ')
-    passphrase = _get_pass(confirm_pass=confirm_pass)
+def _get_new_creds(confirm=True):
+    user_id = prompt('User email')
+    passphrase = prompt.passphrase(confirm=confirm)
     ret = Creds(user_id, passphrase)
     return ret
-
-
-def _get_pass(confirm_pass=False, label='Passphrase', label2='Retype passphrase'):
-    passphrase = getpass.getpass('%s: ' % label)
-    if confirm_pass:
-        passphrase2 = getpass.getpass('%s: ' % label2)
-        if passphrase != passphrase2:
-            print('Sorry, passphrases did not match.')
-            sys.exit(1)
-    passphrase = _get_text(passphrase)
-    return passphrase
 
 
 def _get_creds(kf,
@@ -120,10 +102,10 @@ def _get_creds(kf,
 
     if interactive:
         if user is None:
-            user = _input_text('User email: ')
+            user = prompt('User email')
             user_source = 'stdin'
         if passphrase is None:
-            passphrase = _get_pass(confirm_pass=False)
+            passphrase = prompt.passphrase(confirm=False)
             passphrase_source = 'stdin'
 
     creds = Creds(_get_text(user), _get_text(passphrase),
@@ -224,83 +206,82 @@ The following subcommand handlers all update/write to a protected file (wkf).
 
 def add_key_custodian(wkf):
     'add a new key custodian to the protected'
-    print('Adding new key custodian.')
+    echo('Adding new key custodian.')
     creds = _get_new_creds()
     return wkf.add_key_custodian(creds)
 
 
 def add_domain(wkf, creds):
     'add a new domain to the protected'
-    print('Adding new domain.')
-    domain_name = _input_text('Domain name: ')
+    echo('Adding new domain.')
+    domain_name = prompt('Domain name')
 
     return wkf.add_domain(domain_name, creds.name)
 
 
 def rm_domain(wkf):
     'remove a domain and all of its keys from the protected'
-    print('Removing domain.')
-    domain_name = _input_text('Domain name: ')
+    echo('Removing domain.')
+    domain_name = prompt('Domain name')
     return wkf.rm_domain(domain_name)
 
 
 def add_owner(wkf, creds):
     'add a key custodian to the owner list of a specific domain'
-    print('Adding domain owner.')
-    domain_name = _input_text('Domain name: ')
-    new_owner_name = _input_text('New owner email: ')
+    echo('Adding domain owner.')
+    domain_name = prompt('Domain name')
+    new_owner_name = prompt('New owner email')
     return wkf.add_owner(domain_name, new_owner_name, creds)
 
 
 def rm_owner(wkf):
     'remove a key custodian from the owner list of a domain'
-    print('Removing domain owner.')
-    domain_name = _input_text('Domain name: ')
-    owner_name = _input_text('Owner email: ')
+    echo('Removing domain owner.')
+    domain_name = prompt('Domain name')
+    owner_name = prompt('Owner email')
     return wkf.rm_owner(domain_name, owner_name)
 
 
 def add_secret(wkf):
     'add a secret to a domain'
-    print('Adding secret value.')
-    domain_name = _input_text('Domain name: ')
-    secret_name = _input_text('Secret name: ')
-    secret_value = _input_text('Secret value: ')
+    echo('Adding secret value.')
+    domain_name = prompt('Domain name')
+    secret_name = prompt('Secret name')
+    secret_value = prompt('Secret value')
     return wkf.add_secret(domain_name, secret_name, secret_value)
 
 
 def update_secret(wkf):
     'update a secret value in a domain'
-    print('Updating secret value.')
-    domain_name = _input_text('Domain name: ')
-    secret_name = _input_text('Secret name: ')
-    secret_value = _input_text('Secret value: ')
+    echo('Updating secret value.')
+    domain_name = prompt('Domain name')
+    secret_name = prompt('Secret name')
+    secret_value = prompt('Secret value')
     return wkf.update_secret(domain_name, secret_name, secret_value)
 
 
 def rm_secret(wkf):
     'remove a secret from a domain'
-    print('Updating secret value.')
-    domain_name = _input_text('Domain name: ')
-    secret_name = _input_text('Secret name: ')
+    echo('Updating secret value.')
+    domain_name = prompt('Domain name')
+    secret_name = prompt('Secret name')
     return wkf.rm_secret(domain_name, secret_name)
 
 
 def set_key_custodian_passphrase(wkf):
     'update a key custodian passphrase'
-    user_id = _input_text('User email: ')
-    passphrase = _get_pass(confirm_pass=False, label='Current passphrase')
+    user_id = prompt('User email')
+    passphrase = prompt.passphrase('Current passphrase')
     creds = Creds(user_id, passphrase)
     _check_creds(wkf, creds)
-    new_passphrase = _get_pass(confirm_pass=True,
-                               label='New passphrase',
-                               label2='Retype new passphrase')
+    new_passphrase = prompt.passphrase(confirm=True,
+                                       label='New passphrase')
     return wkf.set_key_custodian_passphrase(creds, new_passphrase)
 
 
 def rotate_domain_keys(wkf, creds):
     'rotate the internal encryption keys for a given domain'
-    domain_name = _input_text('Domain name: ')
+    domain_name = prompt('Domain name')
     return wkf.rotate_domain_key(domain_name, creds)
 
 
@@ -310,14 +291,14 @@ Read-only operations follow
 
 def print_version():
     'print the PocketProtector version and exit'
-    print('pocket_protector version %s' % __version__)
+    echo('pocket_protector version %s' % __version__)
     sys.exit(0)
 
 
 def decrypt_domain(kf, creds, domain_name):
     'output the decrypted contents of a domain in JSON format'
     decrypted_dict = kf.decrypt_domain(domain_name, creds)
-    print(json.dumps(decrypted_dict, indent=2, sort_keys=True))
+    echo(json.dumps(decrypted_dict, indent=2, sort_keys=True))
     return 0
 
 
@@ -325,9 +306,9 @@ def list_domains(kf):
     'print a list of domain names, if any'
     domain_names = kf.get_domain_names()
     if domain_names:
-        print('\n'.join(domain_names))
+        echo('\n'.join(domain_names))
     else:
-        print('(No domains in protected at %s)' % kf.path)
+        echo.err('(No domains in protected at %s)' % kf.path)
     return
 
 
@@ -335,10 +316,10 @@ def list_domain_secrets(kf, domain_name):
     'print a list of secret names for a given domain'
     secret_names = kf.get_domain_secret_names(domain_name)
     if secret_names:
-        print('\n'.join(secret_names))
+        echo('\n'.join(secret_names))
     else:
-        print('(No secrets in domain %r of protected at %s)'
-              % (domain_name, kf.path))
+        echo.err('(No secrets in domain %r of protected at %s)'
+                 % (domain_name, kf.path))
     return
 
 
@@ -346,19 +327,20 @@ def list_all_secrets(kf):
     'print a list of all secret names, along with the domains that define each'
     secrets_map = kf.get_all_secret_names()
     if not secrets_map:
-        print('(No secrets in protected at %s)' % kf.path)
+        echo.err('(No secrets in protected at %s)' % kf.path)
     else:
         for secret_name in sorted(secrets_map):
             domain_names = sorted(set(secrets_map[secret_name]))
-            print('%s: %s' % (secret_name, ', '.join(domain_names)))
+            echo('%s: %s' % (secret_name, ', '.join(domain_names)))
     return
 
 
 def list_audit_log(kf):
     'print a list of actions from the audit log, one per line'
     log_list = kf.get_audit_log()
-    print('\n'.join(log_list))
+    echo('\n'.join(log_list))
     return
+
 
 """
 End subcommand handlers
@@ -393,7 +375,7 @@ def mw_ensure_kf(next_, file, subcmds_):
             try:
                 os.unlink(file_abs_path)
             except Exception:
-                print('Warning: failed to remove file: %s' % file_abs_path)
+                echo.err('Warning: failed to remove file: %s' % file_abs_path)
         raise
 
     return ret
@@ -415,11 +397,11 @@ def mw_write_kf(next_, kf, confirm):
                                                modified_kf.get_contents().splitlines(),
                                                kf.path + '.old', kf.path + '.new'))
         diff_lines = _get_colorized_lines(diff_lines)
-        print('Changes to be written:\n')
-        print('\n'.join(diff_lines) + '\n')
-        do_write = _input_text('Write changes? [y/N] ')
+        echo('Changes to be written:\n')
+        echo('\n'.join(diff_lines) + '\n')
+        do_write = prompt('Write changes? [y/N] ')
         if not do_write.lower().startswith('y'):
-            print('Aborting...')
+            echo('Aborting...')
             sys.exit(0)
 
     modified_kf.write()
@@ -436,10 +418,10 @@ def mw_exit_handler(next_):
         except PPError as ppe:
             raise UsageError(ppe.args[0])
     except KeyboardInterrupt:
-        print('')
+        echo('')
         status = 130
     except EOFError:
-        print('')
+        echo('')
         status = 1
 
     sys.exit(status)

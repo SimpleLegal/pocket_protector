@@ -116,7 +116,7 @@ def test_cli(tmp_path, _fast_crypto):
 
     res = cc.fail_1('pprotect set-key-custodian-passphrase',
                     input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE, KURT_PHRASE + 'nope'])
-    assert 'did not match' in res.stdout  # TODO: may change to stderr
+    assert 'did not match' in res.stderr
 
     # correctly reset passphrase
     new_kurt_phrase = KURT_PHRASE + 'yep'
