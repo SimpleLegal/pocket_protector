@@ -3,7 +3,6 @@
 import os
 import sys
 import json
-import getpass
 import difflib
 
 from face import Command, Flag, face_middleware, CommandLineError, UsageError, echo, prompt
@@ -64,7 +63,7 @@ def _get_colorized_lines(lines):
 
 def _get_new_creds(confirm=True):
     user_id = prompt('User email')
-    passphrase = prompt.passphrase(confirm=confirm)
+    passphrase = prompt.secret('Passphrase: ', confirm=confirm)
     ret = Creds(user_id, passphrase)
     return ret
 
@@ -105,7 +104,7 @@ def _get_creds(kf,
             user = prompt('User email')
             user_source = 'stdin'
         if passphrase is None:
-            passphrase = prompt.passphrase(confirm=False)
+            passphrase = prompt.secret('Passphrase: ', confirm=False)
             passphrase_source = 'stdin'
 
     creds = Creds(_get_text(user), _get_text(passphrase),
@@ -271,11 +270,10 @@ def rm_secret(wkf):
 def set_key_custodian_passphrase(wkf):
     'update a key custodian passphrase'
     user_id = prompt('User email')
-    passphrase = prompt.passphrase('Current passphrase')
+    passphrase = prompt.secret('Current passphrase: ')
     creds = Creds(user_id, passphrase)
     _check_creds(wkf, creds)
-    new_passphrase = prompt.passphrase(confirm=True,
-                                       label='New passphrase')
+    new_passphrase = prompt.secret('New passphrase: ', confirm=True)
     return wkf.set_key_custodian_passphrase(creds, new_passphrase)
 
 

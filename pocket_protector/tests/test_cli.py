@@ -37,13 +37,13 @@ def test_cli(tmp_path, _fast_crypto):
     protected_path = tmp_path + '/protected.yaml'
 
     # fail init and ensure that file isn't created
-    res = cc.fail_1('pprotect init --file %s' % protected_path,
-                    input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE + 'nope'])
+    cc.fail_1('pprotect init --file %s' % protected_path,
+              input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE + 'nope'])
     assert not os.path.exists(protected_path)
 
-    res = cc.run('pprotect init --file %s' % protected_path,
-                 input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE])
-
+    # successfully create protected
+    cc.run('pprotect init --file %s' % protected_path,
+           input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE])
 
     # check we can only create it once
     res = cc.fail_2('pprotect init --file %s' % protected_path,
@@ -61,58 +61,49 @@ def test_cli(tmp_path, _fast_crypto):
     kurt_env = {'PPROTECT_USER': KURT_EMAIL, 'PPROTECT_PASSPHRASE': KURT_PHRASE}
     cc = CommandChecker(cmd, chdir=tmp_path, env=kurt_env, reraise=True)
 
-    res = cc.run(['pprotect', 'add-domain'], input=[DOMAIN_NAME])
-
+    cc.run(['pprotect', 'add-domain'], input=[DOMAIN_NAME])
     res = cc.run(['pprotect', 'list_domains'])
-
     assert res.stdout.splitlines() == [DOMAIN_NAME]
 
-    res = cc.run(['pprotect', 'add-secret'],
-                 input=[DOMAIN_NAME, SECRET_NAME, 'tmpval'])
-
-
-    res = cc.run(['pprotect', 'update-secret'],
-                 input=[DOMAIN_NAME, SECRET_NAME, SECRET_VALUE])
-
-
+    cc.run(['pprotect', 'add-secret'],
+           input=[DOMAIN_NAME, SECRET_NAME, 'tmpval'])
+    cc.run(['pprotect', 'update-secret'],
+           input=[DOMAIN_NAME, SECRET_NAME, SECRET_VALUE])
     res = cc.run(['pprotect', 'list-domain-secrets', DOMAIN_NAME])
-
     assert res.stdout == SECRET_NAME + '\n'
 
     res = cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME])
-
     res_data = json.loads(res.stdout)
     assert res_data[SECRET_NAME] == SECRET_VALUE
 
-    res = cc.fail(['pprotect', 'decrypt-domain', 'nonexistent-domain'])
+    cc.fail(['pprotect', 'decrypt-domain', 'nonexistent-domain'])
 
     # already exists
-    res = cc.fail_1('pprotect add-key-custodian', input=[KURT_EMAIL, ''])
+    cc.fail_1('pprotect add-key-custodian', input=[KURT_EMAIL, ''])
 
-    res = cc.run('pprotect add-key-custodian', input=[MH_EMAIL, MH_PHRASE, MH_PHRASE])
+    cc.run('pprotect add-key-custodian', input=[MH_EMAIL, MH_PHRASE, MH_PHRASE])
 
-    res = cc.run('pprotect add-owner', input=[DOMAIN_NAME, MH_EMAIL])
+    cc.run('pprotect add-owner', input=[DOMAIN_NAME, MH_EMAIL])
 
     # missing protected
-    res = cc.fail_2('pprotect list-all-secrets', chdir=tmp_path + '/..')
+    cc.fail_2('pprotect list-all-secrets', chdir=tmp_path + '/..')
 
-    res = cc.run('pprotect list-all-secrets')
+    cc.run('pprotect list-all-secrets')
     assert SECRET_NAME in res.stdout
 
-    res = cc.run(['pprotect', 'rotate_domain_keys'], input=[DOMAIN_NAME])
+    cc.run(['pprotect', 'rotate_domain_keys'], input=[DOMAIN_NAME])
 
 
     # test mixed env var and entry
-    res = cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME],
-                 env={'PPROTECT_USER': MH_EMAIL, 'PPROTECT_PASSPHRASE': None},
-                 input=[MH_PHRASE])
-
+    cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME],
+           env={'PPROTECT_USER': MH_EMAIL, 'PPROTECT_PASSPHRASE': None},
+           input=[MH_PHRASE])
     assert json.loads(res.stdout)[SECRET_NAME] == SECRET_VALUE
 
     # test bad creds
-    res = cc.fail_1(['pprotect', 'decrypt-domain', DOMAIN_NAME],
-                    env={'PPROTECT_USER': None, 'PPROTECT_PASSPHRASE': 'nope'},
-                    input=[KURT_EMAIL])
+    cc.fail_1(['pprotect', 'decrypt-domain', DOMAIN_NAME],
+              env={'PPROTECT_USER': None, 'PPROTECT_PASSPHRASE': 'nope'},
+              input=[KURT_EMAIL])
 
     res = cc.fail_1('pprotect set-key-custodian-passphrase',
                     input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE, KURT_PHRASE + 'nope'])
@@ -134,15 +125,13 @@ def test_cli(tmp_path, _fast_crypto):
     assert res_data[SECRET_NAME] == SECRET_VALUE
 
     # test mutual exclusivity of check env and interactive
-    res = cc.fail_2(['pprotect', 'decrypt-domain',
-                     '--non-interactive', '--ignore-env', DOMAIN_NAME])
+    cc.fail_2(['pprotect', 'decrypt-domain',
+               '--non-interactive', '--ignore-env', DOMAIN_NAME])
 
     # test removals
-    res = cc.run(['pprotect', 'rm-owner'], input=[DOMAIN_NAME, MH_EMAIL])
-
-    res = cc.run(['pprotect', 'rm-secret'], input=[DOMAIN_NAME, SECRET_NAME])
-
-    res = cc.run(['pprotect', 'rm-domain', '--confirm'], input=[DOMAIN_NAME, 'y'])
+    cc.run(['pprotect', 'rm-owner'], input=[DOMAIN_NAME, MH_EMAIL])
+    cc.run(['pprotect', 'rm-secret'], input=[DOMAIN_NAME, SECRET_NAME])
+    cc.run(['pprotect', 'rm-domain', '--confirm'], input=[DOMAIN_NAME, 'y'])
 
 
 def test_main(tmp_path):
