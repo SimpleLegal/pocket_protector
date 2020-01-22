@@ -1,0 +1,2 @@
+include LICENSE.txt USER_GUIDE.md CHANGELOG.md requirements.in requirements.txt tox.ini .tox-coveragerc
+global-exclude flycheck_*
