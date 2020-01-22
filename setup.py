@@ -48,7 +48,9 @@ Release process:
 * git commit (if applicable)
 * Remove dev suffix from pocket_protector/_version.py version
 * git commit -a -m "bump version for vX.Y.Z release"
-* python setup.py sdist bdist_wheel upload
+* rm -rf dist
+* python setup.py sdist bdist_wheel
+* twine upload
 * git tag -a vX.Y.Z -m "brief summary"
 * write CHANGELOG
 * git commit
