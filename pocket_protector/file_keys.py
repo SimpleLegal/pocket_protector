@@ -8,6 +8,7 @@ import os
 import re
 import base64
 import collections
+import datetime
 import hashlib
 try:
     from cStringIO import StringIO
@@ -415,6 +416,11 @@ class KeyFile(object):
         text = stream.getvalue()
         return text
 
+    def _new_log(self, entry, *a, **kw):
+        cur_time_str = datetime.datetime.utcnow().isoformat().split('.')[0] + 'Z'
+        new_entry = cur_time_str + ' -- ' + (entry.format(*a, **kw))
+        return self._log + [new_entry]
+
     def get_audit_log(self):
         return list(self._log)
 
@@ -438,8 +444,8 @@ class KeyFile(object):
             domain_name, key_custodian)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['created domain {} with owner {}'.format(
-                domain_name, key_custodian_name)])
+            log=self._new_log('created domain {} with owner {}',
+                              domain_name, key_custodian_name))
 
     def rm_domain(self, domain_name):
         '''
@@ -447,7 +453,7 @@ class KeyFile(object):
         '''
         return attr.evolve(
             self, domains=_deleted(self._domains, domain_name),
-            log=self._log + ['deleted domain {}'.format(domain_name)])
+            log=self._new_log('deleted domain {}', domain_name))
 
     def set_secret(self, domain_name, name, value):
         'return a copy of the KeyFile with the given secret name and value added to a domain'
@@ -455,7 +461,7 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].set_secret(name, value)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['set secret {} in {}'.format(name, domain_name)])
+            log=self._new_log('set secret {} in {}', name, domain_name))
 
     def add_secret(self, domain_name, name, value):
         'add a secret that doesnt exist yet'
@@ -463,7 +469,7 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].add_secret(name, value)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['added secret {} in {}'.format(name, domain_name)])
+            log=self._new_log('added secret {} in {}', name, domain_name))
 
     def update_secret(self, domain_name, name, value):
         'update the value of a secret that already exists'
@@ -471,7 +477,7 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].update_secret(name, value)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['updated secret {} in {}'.format(name, domain_name)])
+            log=self._new_log('updated secret {} in {}', name, domain_name))
 
     def rm_secret(self, domain_name, name):
         'return a copy with secret removed from domain'
@@ -479,7 +485,7 @@ class KeyFile(object):
         domains[domain_name] = self._domains[domain_name].rm_secret(name)
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['removed secret {} from {}'.format(name, domain_name)])
+            log=self._new_log('removed secret {} from {}', name, domain_name))
 
     def add_owner(self, domain_name, key_custodian_name, creds):
         '''
@@ -492,8 +498,8 @@ class KeyFile(object):
             new_key_custodian=self._key_custodians[key_custodian_name])
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['{} added owner {} to {}'.format(
-                creds.name, key_custodian_name, domain_name)])
+            log=self._new_log('{} added owner {} to {}',
+                creds.name, key_custodian_name, domain_name))
 
     def rm_owner(self, domain_name, key_custodian_name):
         '''
@@ -506,8 +512,8 @@ class KeyFile(object):
             self, domains=_setitem(
                 self._domains, domain_name,
                 self._domains[domain_name].rm_owner(key_custodian_name)),
-            log=self._log + ['removed owner {} from {}'.format(
-                key_custodian_name, domain_name)])
+            log=self._new_log('removed owner {} from {}',
+                key_custodian_name, domain_name))
 
     def add_key_custodian(self, creds):
         key_custodians = dict(self._key_custodians)
@@ -517,7 +523,7 @@ class KeyFile(object):
         key_custodians[creds.name] = _KeyCustodian.from_creds(creds)
         return attr.evolve(
             self, key_custodians=key_custodians,
-            log=self._log + ['created key custodian {}'.format(creds.name)])
+            log=self._new_log('created key custodian {}', creds.name))
 
     def rm_key_custodian(self, key_custodian_name):
         'remove key custodian and all domain ownerships'
@@ -531,8 +537,8 @@ class KeyFile(object):
         del key_custodians[key_custodian_name]
         return attr.evolve(
             self, key_custodians=key_custodians, domains=domains,
-            log=self._log + ['removed key custodian {} (was owner of {})'.format(
-                key_custodian_name, ", ".join(owned))])
+            log=self._new_log('removed key custodian {} (was owner of {})',
+                key_custodian_name, ", ".join(owned)))
 
     def decrypt_domain(self, domain_name, creds):
         return self._domains[domain_name].get_decrypted(
@@ -553,9 +559,9 @@ class KeyFile(object):
                 updated.append(name)
         return attr.evolve(
             self, key_custodians=key_custodians, domains=domains,
-            log=self._log + [
-                'updated key custodian passphrase for {} (updated domains -- {})'.format(
-                    creds.name, ", ".join(updated))])
+            log=self._new_log(
+                'updated key custodian passphrase for {} (updated domains -> {})',
+                    creds.name, ", ".join(updated)))
 
     def check_creds(self, creds):
         try:
@@ -590,7 +596,7 @@ class KeyFile(object):
         domains[domain_name] = new_domain
         return attr.evolve(
             self, domains=domains,
-            log=self._log + ['rotated key for domain {}'.format(domain_name)])
+            log=self._new_log('rotated key for domain {}', domain_name))
 
     def truncate_audit_log(self, max_keep):
         max_keep = int(max_keep)
