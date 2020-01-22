@@ -13,16 +13,21 @@ _version_mod_path = os.path.join(CUR_PATH, 'pocket_protector', '_version.py')
 _version_mod = imp.load_source('_version', _version_mod_path)
 __version__ = _version_mod.__version__
 
+with open('README.md') as readme:
+    long_description = readme.read()
+
+
 setup(
     name="pocket-protector",
     description="Handy secret management system with a convenient CLI and readable storage format.",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author=__author__,
     author_email=__contact__,
     url=__url__,
     license=__license__,
     platforms='any',
     version=__version__,
-    long_description=__doc__,
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
