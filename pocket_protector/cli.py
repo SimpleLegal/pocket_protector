@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+pocket_protector
+
+People-centric secret management system, built to work with modern distributed version control systems.
+"""
+# Note that the doc above is part of "pprotect -h" output, add to it wisely.
 
 import os
 import sys
@@ -17,8 +23,6 @@ _ANSI_RESET_ALL = '\x1b[0m'
 # TODO: custodian-signed values. allow custodians to sign values
 # added/set by others, then produced reports on which secrets have been
 # updated/changed but not signed yet. enables a review/audit mechanism.
-
-# TODO: integrate new face error raising instead of prints (when printing errors)
 
 try:
     unicode
@@ -137,7 +141,7 @@ def _check_creds(kf, creds):
 
 
 def _get_cmd(prepare=False):
-    cmd = Command(name='pocket_protector', func=None)  # func=None means output help
+    cmd = Command(name='pocket_protector', func=None, doc=__doc__)  # func=None means output help
 
     # add flags
     cmd.add('--file', missing='protected.yaml',
