@@ -9,6 +9,12 @@ scheme (`YY.MINOR.MICRO`).
 Check this page when upgrading, we strive to keep the updates
 summarized and readable.
 
+20.0.1
+------
+*(January 22, 2020)*
+
+* Fix new user prompt formatting
+
 20.0.0
 ------
 *(January 21, 2020)*

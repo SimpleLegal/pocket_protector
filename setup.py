@@ -50,7 +50,7 @@ Release process:
 * git commit -a -m "bump version for vX.Y.Z release"
 * rm -rf dist
 * python setup.py sdist bdist_wheel
-* twine upload
+* twine upload dist/*
 * git tag -a vX.Y.Z -m "brief summary"
 * write CHANGELOG
 * git commit
