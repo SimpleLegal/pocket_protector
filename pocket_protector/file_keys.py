@@ -363,6 +363,7 @@ class KeyFile(object):
     _key_custodians = _err_map_attrib('key custodian')
     _log = attr.ib(default=attr.Factory(list))
     _yaml = ruamel.yaml.YAML()  # class var
+    _yaml.width = 100
 
     @classmethod
     def from_file(cls, path):
