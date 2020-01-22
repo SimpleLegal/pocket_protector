@@ -2,9 +2,11 @@ attrs
 boltons
 coverage
 face
+pip-tools
 PyNaCl
 pytest
 # ruamel.ordereddict==0.4.14  # via ruamel.yaml  # this stays commented out so py3 builds work
 ruamel.yaml
 schema
 tox
+twine
