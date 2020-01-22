@@ -36,18 +36,15 @@ setup(
     install_requires=['attrs',
                       'boltons',
                       'PyNaCl',
-                      # ruamel is pinned to a 2018-08-08 version until
-                      # py3 and ruamel's ordereddict is a dict again
-                      # (or schemas switch to mutablemapping)
-                      'ruamel.yaml>=0.15.51',
+                      'ruamel.yaml',
                       'schema',
-                      'face']
+                      'face>=20.1.0']
 )
 
 """
 Release process:
 
-* tox  # TODO
+* tox
 * git commit (if applicable)
 * Remove dev suffix from pocket_protector/_version.py version
 * git commit -a -m "bump version for vX.Y.Z release"

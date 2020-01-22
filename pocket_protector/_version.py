@@ -3,4 +3,4 @@
 # well as in setup.py. For full release directions, see the bottom of
 # setup.py.
 
-__version__ = '18.0.2dev'
+__version__ = '20.0.0'
