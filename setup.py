@@ -38,7 +38,7 @@ setup(
                       'PyNaCl',
                       'ruamel.yaml',
                       'schema',
-                      'face>=20.1.0']
+                      'face>=20.1.1']
 )
 
 """

@@ -35,7 +35,7 @@ installation:
 
 ```
 $ pprotect version
-pocket_protector version 17.0.0
+pocket_protector version 20.0.0
 ```
 
 Once the above is working, we're ready to start using PocketProtector!
@@ -88,9 +88,9 @@ for `local` (our development laptops).
 
 ```
 tom@tomtop $ pprotect add-domain
-Adding new domain.
 User email: tom@example.com
 Passphrase:
+Adding new domain.
 Domain name: dev
 ```
 
@@ -182,18 +182,18 @@ something like this:
 
 ```
 dev:
-  secret-chat-api-key: AJ9XggjXrAGhiLKi++JcnPQp21w8eA9xVvaObuqGlsNenCLkG7CR6EYTMUVriZEBdczs1C1wKdOPqymg
+  secret-chat-api-key: ABpVkJKq6WgOgl0rQYDSB0zAjNGD1Gn4aEFmWthMd9l+hjz8rjBJYDm/guyeIVZOwj7m/TQPJNz/yw0D
   meta:
-    public-key: AGhhn94rgArfPfI9CrqfjjV5pAgf9XTkcPYB3rMgqsZl
+    public-key: AKKRHVwQcbLkk2yK7L3DWmTKzqYhlFuavNpdzl//hbk1
     owners:
-      tom@example.com: AE6sqmhfPthGc3NlSImebhotARpuyJjQ44Atk3aarQwfsNDSO/v9vjrfkdhi/pTnCHm2dCBva7Wj9eKCAn8K6/n1k16z2oD8SV8r0qN0NHa4
+      tom@example.com: ANrCtPEyppOZt7waOrW/GDQTd7+/tGTLJNqmtaxX8FhbYVsbPWVgSdvzVNEUVM3/bRFsfpw5GHmF93qVwqC7wUtNnIngp1qiDpGyN12iVHEZ
 key-custodians:
   tom@example.com:
-    pwdkm: ACP7GZtkl6twYUY8cnVokBaD14+Mze/gi4ygnWhreY82mEZVbAr6fCc=
+    pwdkm: ALLq2pN0MCqlQ3V0SAl7d71zeOd1D0vBzjZ6y5L5uK3TFMuDKe5uCAA=
 audit-log:
-- created key custodian tom@example.com
-- created domain dev with owner tom@example.com
-- added secret chat-api-key in dev
+- 2020-01-22T18:06:40Z -- created key custodian tom@example.com
+- 2020-01-22T19:46:15Z -- created domain dev with owner tom@example.com
+- 2020-01-22T19:46:38Z -- added secret chat-api-key in dev
 ```
 
 All of the state PocketProtector needs to operate is included in this

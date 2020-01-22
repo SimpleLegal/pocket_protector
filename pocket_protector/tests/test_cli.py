@@ -42,8 +42,10 @@ def test_cli(tmp_path, _fast_crypto):
     assert not os.path.exists(protected_path)
 
     # successfully create protected
-    cc.run('pprotect init --file %s' % protected_path,
-           input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE])
+    res = cc.run('pprotect init --file %s' % protected_path,
+                 input=[KURT_EMAIL, KURT_PHRASE, KURT_PHRASE])
+    assert res.stdout == 'Adding new key custodian.\nUser email: '
+    assert res.stderr == 'Passphrase: Retype passphrase: '
 
     # check we can only create it once
     res = cc.fail_2('pprotect init --file %s' % protected_path,
@@ -61,7 +63,10 @@ def test_cli(tmp_path, _fast_crypto):
     kurt_env = {'PPROTECT_USER': KURT_EMAIL, 'PPROTECT_PASSPHRASE': KURT_PHRASE}
     cc = CommandChecker(cmd, chdir=tmp_path, env=kurt_env, reraise=True)
 
-    cc.run(['pprotect', 'add-domain'], input=[DOMAIN_NAME])
+    res = cc.run(['pprotect', 'add-domain'], input=[DOMAIN_NAME])
+    assert 'Adding new domain.' in res.stdout
+
+
     res = cc.run(['pprotect', 'list_domains'])
     assert res.stdout.splitlines() == [DOMAIN_NAME]
 

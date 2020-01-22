@@ -66,7 +66,7 @@ def _get_colorized_lines(lines):
 
 
 def _get_new_creds(confirm=True):
-    user_id = prompt('User email')
+    user_id = prompt('User email: ')
     passphrase = prompt.secret('Passphrase: ', confirm=confirm)
     ret = Creds(user_id, passphrase)
     return ret
@@ -105,7 +105,7 @@ def _get_creds(kf,
 
     if interactive:
         if user is None:
-            user = prompt('User email')
+            user = prompt('User email: ')
             user_source = 'stdin'
         if passphrase is None:
             passphrase = prompt.secret('Passphrase: ', confirm=False)
@@ -217,7 +217,7 @@ def add_key_custodian(wkf):
 def add_domain(wkf, creds):
     'add a new domain to the protected'
     echo('Adding new domain.')
-    domain_name = prompt('Domain name')
+    domain_name = prompt('Domain name: ')
 
     return wkf.add_domain(domain_name, creds.name)
 
@@ -225,55 +225,55 @@ def add_domain(wkf, creds):
 def rm_domain(wkf):
     'remove a domain and all of its keys from the protected'
     echo('Removing domain.')
-    domain_name = prompt('Domain name')
+    domain_name = prompt('Domain name: ')
     return wkf.rm_domain(domain_name)
 
 
 def add_owner(wkf, creds):
     'add a key custodian to the owner list of a specific domain'
     echo('Adding domain owner.')
-    domain_name = prompt('Domain name')
-    new_owner_name = prompt('New owner email')
+    domain_name = prompt('Domain name: ')
+    new_owner_name = prompt('New owner email: ')
     return wkf.add_owner(domain_name, new_owner_name, creds)
 
 
 def rm_owner(wkf):
     'remove a key custodian from the owner list of a domain'
     echo('Removing domain owner.')
-    domain_name = prompt('Domain name')
-    owner_name = prompt('Owner email')
+    domain_name = prompt('Domain name: ')
+    owner_name = prompt('Owner email: ')
     return wkf.rm_owner(domain_name, owner_name)
 
 
 def add_secret(wkf):
     'add a secret to a domain'
     echo('Adding secret value.')
-    domain_name = prompt('Domain name')
-    secret_name = prompt('Secret name')
-    secret_value = prompt('Secret value')
+    domain_name = prompt('Domain name: ')
+    secret_name = prompt('Secret name: ')
+    secret_value = prompt('Secret value: ')
     return wkf.add_secret(domain_name, secret_name, secret_value)
 
 
 def update_secret(wkf):
     'update a secret value in a domain'
     echo('Updating secret value.')
-    domain_name = prompt('Domain name')
-    secret_name = prompt('Secret name')
-    secret_value = prompt('Secret value')
+    domain_name = prompt('Domain name: ')
+    secret_name = prompt('Secret name: ')
+    secret_value = prompt('Secret value: ')
     return wkf.update_secret(domain_name, secret_name, secret_value)
 
 
 def rm_secret(wkf):
     'remove a secret from a domain'
     echo('Updating secret value.')
-    domain_name = prompt('Domain name')
-    secret_name = prompt('Secret name')
+    domain_name = prompt('Domain name: ')
+    secret_name = prompt('Secret name: ')
     return wkf.rm_secret(domain_name, secret_name)
 
 
 def set_key_custodian_passphrase(wkf):
     'update a key custodian passphrase'
-    user_id = prompt('User email')
+    user_id = prompt('User email: ')
     passphrase = prompt.secret('Current passphrase: ')
     creds = Creds(user_id, passphrase)
     _check_creds(wkf, creds)
@@ -283,7 +283,7 @@ def set_key_custodian_passphrase(wkf):
 
 def rotate_domain_keys(wkf, creds):
     'rotate the internal encryption keys for a given domain'
-    domain_name = prompt('Domain name')
+    domain_name = prompt('Domain name: ')
     return wkf.rotate_domain_key(domain_name, creds)
 
 
