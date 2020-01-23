@@ -366,6 +366,12 @@ class KeyFile(object):
     _yaml.width = 100
 
     @classmethod
+    def create(cls, path):
+        blank = cls(path=path)
+        ret = attr.evolve(blank, log=blank._new_log('created'))
+        return ret
+
+    @classmethod
     def from_file(cls, path):
         'create a new KeyFile from path'
         with open(path, 'rb') as file:
@@ -425,7 +431,7 @@ class KeyFile(object):
     def get_audit_log(self):
         return list(self._log)
 
-    def write(self):  # TODO: need way to get contents.
+    def write(self):
         'write contents to file'
         contents = self.get_contents()
         with atomic_save(self.path) as file:

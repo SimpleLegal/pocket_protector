@@ -53,10 +53,12 @@ def test_cli(tmp_path, _fast_crypto):
 
     file_data = ruamel.yaml.YAML().load(open(protected_path).read())
     assert list(file_data['key-custodians'])[0] == KURT_EMAIL
-    assert len(file_data['audit-log']) == 1
+    assert len(file_data['audit-log']) == 2
 
     res = cc.run('pprotect list-audit-log --file %s' % protected_path)
-    assert len(res.stdout.splitlines()) == 1
+    audit_lines = res.stdout.splitlines()
+    assert len(audit_lines) == 2
+    assert 'created' in audit_lines[0]
 
     # make a new cc, with env and tmp_path baked in (also tests
     # protected.yaml in the cur dir being the default file)
@@ -132,6 +134,8 @@ def test_cli(tmp_path, _fast_crypto):
     # test mutual exclusivity of check env and interactive
     cc.fail_2(['pprotect', 'decrypt-domain',
                '--non-interactive', '--ignore-env', DOMAIN_NAME])
+
+    # print(open(protected_path).read())
 
     # test removals
     cc.run(['pprotect', 'rm-owner'], input=[DOMAIN_NAME, MH_EMAIL])

@@ -20,7 +20,7 @@ def test_file_keys(_fast_crypto):
         _prev[0] = fk
 
     tmp = tempfile.NamedTemporaryFile()
-    test1 = test = file_keys.KeyFile(path=tmp.name)
+    test1 = test = file_keys.KeyFile.create(path=tmp.name)
     chk(test)
     test2 = test = test.add_key_custodian(bob_creds)
     chk(test)

@@ -41,9 +41,7 @@ def _create_protected(path):
     if os.path.exists(path):
         raise UsageError('Protected file already exists: %s' % path, 2)
     open(path, 'wb').close()
-    kf = KeyFile(path=path)
-    # TODO: add audit log entry for creation date
-    # TODO: add audit log dates in general
+    kf = KeyFile.create(path=path)
     kf.write()
     return kf
 
