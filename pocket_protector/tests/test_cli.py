@@ -68,7 +68,6 @@ def test_cli(tmp_path, _fast_crypto):
     res = cc.run(['pprotect', 'add-domain'], input=[DOMAIN_NAME])
     assert 'Adding new domain.' in res.stdout
 
-
     res = cc.run(['pprotect', 'list_domains'])
     assert res.stdout.splitlines() == [DOMAIN_NAME]
 
@@ -102,10 +101,11 @@ def test_cli(tmp_path, _fast_crypto):
 
 
     # test mixed env var and entry
-    cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME],
-           env={'PPROTECT_USER': MH_EMAIL, 'PPROTECT_PASSPHRASE': None},
-           input=[MH_PHRASE])
+    res = cc.run(['pprotect', 'decrypt-domain', DOMAIN_NAME],
+                 env={'PPROTECT_USER': MH_EMAIL, 'PPROTECT_PASSPHRASE': None},
+                 input=[MH_PHRASE])
     assert json.loads(res.stdout)[SECRET_NAME] == SECRET_VALUE
+    assert 'Verify passphrase' in res.stderr
 
     # test bad creds
     cc.fail_1(['pprotect', 'decrypt-domain', DOMAIN_NAME],

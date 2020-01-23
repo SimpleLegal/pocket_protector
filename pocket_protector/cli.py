@@ -102,6 +102,14 @@ def _get_creds(kf,
         passphrase_source = 'env var: %s' % pass_env_var
 
     if interactive:
+        msg = ''
+        if user is None:
+            msg = 'Verify credentials for %s' % kf.path
+        elif passphrase is None:
+            msg = 'Verify passphrase for %s (Using user %s from %s)' % (kf.path, user, user_source)
+        if msg:
+            echo.err(msg)
+
         if user is None:
             user = prompt('User email: ')
             user_source = 'stdin'
@@ -109,7 +117,7 @@ def _get_creds(kf,
             passphrase = prompt.secret('Passphrase: ', confirm=False)
             passphrase_source = 'stdin'
 
-    creds = Creds(_get_text(user), _get_text(passphrase),
+    creds = Creds(_get_text(user or ''), _get_text(passphrase or ''),
                   name_source=user_source, passphrase_source=passphrase_source)
     _check_creds(kf, creds)
 
