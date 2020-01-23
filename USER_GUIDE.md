@@ -88,6 +88,7 @@ for `local` (our development laptops).
 
 ```
 tom@tomtop $ pprotect add-domain
+Verify credentials for /home/tom/work/project/protected.yaml
 User email: tom@example.com
 Passphrase:
 Adding new domain.
