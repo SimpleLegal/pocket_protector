@@ -272,18 +272,18 @@ you can also access it from the command line, one entry per line:
 
 ```
 $ pprotect list-audit-log
-created key custodian tom@example.com
-created domain dev with owner tom@example.com
-added secret chat-api-key in dev
-created domain prod with owner tom@example.com
-added secret mail-api-key in dev
-added secret mail-api-key in prod
+2020-01-22T18:06:40Z -- created key custodian tom@example.com
+2020-01-22T19:46:15Z -- created domain dev with owner tom@example.com
+2020-01-22T19:46:38Z -- added secret chat-api-key in dev
+2020-01-23T05:12:28Z -- created domain prod with owner tom@example.com
+2020-01-23T05:13:22Z -- added secret mail-api-key in dev
+2020-01-23T05:13:50Z -- added secret mail-api-key in prod
 ```
 
-And here we can see how it all went down. It's far from complete, but
-it's a pretty good summary that should be used in conjunction with
-your source control management tools. Using `git` as an example, `git
-log protected.yaml` and `git blame protected.yaml` are both excellent
+And here we can see how it all went down. The audit log is a pretty
+good summary that should be used in conjunction with your source
+control management tools. Using `git` as an example, `git log
+protected.yaml` and `git blame protected.yaml` are both excellent
 complements to the audit log.
 
 The audit log is also completely supplementary. It can safely be
