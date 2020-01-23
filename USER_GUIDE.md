@@ -84,7 +84,7 @@ create one or more *domains*.
 A domain can represent any set of keys accessible to the same actors,
 and in our scenario we're going to have one domain per environment,
 which means one domain for `prod` (our production datacenter) and one
-for `local` (our development laptops).
+for `dev` (our development laptops).
 
 ```
 tom@tomtop $ pprotect add-domain
