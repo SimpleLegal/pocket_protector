@@ -26,6 +26,7 @@ SECRET_NAME = 'secret-name'
 SECRET_VALUE = u'secrët-value'
 
 
+
 # _fast_crypto from conftest
 def test_cli(tmp_path, _fast_crypto):
     cmd = cli._get_cmd()
@@ -134,6 +135,10 @@ def test_cli(tmp_path, _fast_crypto):
     # test mutual exclusivity of check env and interactive
     cc.fail_2(['pprotect', 'decrypt-domain',
                '--non-interactive', '--ignore-env', DOMAIN_NAME])
+
+    res = cc.fail_1('pprotect decrypt-domain --non-interactive ' + DOMAIN_NAME,
+                    env={'PPROTECT_PASSPHRASE': None})
+    assert 'Warning: Empty passphrase' in res.stderr
 
     # print(open(protected_path).read())
 
