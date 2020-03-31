@@ -6,7 +6,7 @@
 #
 atomicwrites==1.3.0       # via pytest
 attrs==19.3.0             # via -r requirements.in, pytest
-bleach==3.1.2             # via readme-renderer
+bleach==3.1.4             # via readme-renderer
 boltons==20.0.0           # via -r requirements.in, face
 certifi==2019.11.28       # via requests
 cffi==1.13.2              # via pynacl
