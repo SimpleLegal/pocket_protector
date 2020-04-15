@@ -408,7 +408,7 @@ class KeyFile(object):
             secrets_dict = domain._secrets
             for secret_name in secrets_dict:
                 res.add(secret_name, domain_name)
-        return dict(res)
+        return res.todict(True)
 
     def get_contents(self):
         data = collections.OrderedDict(sorted([

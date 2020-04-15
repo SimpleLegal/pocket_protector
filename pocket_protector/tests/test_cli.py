@@ -95,8 +95,8 @@ def test_cli(tmp_path, _fast_crypto):
     # missing protected
     cc.fail_2('pprotect list-all-secrets', chdir=tmp_path + '/..')
 
-    cc.run('pprotect list-all-secrets')
-    assert SECRET_NAME in res.stdout
+    res = cc.run('pprotect list-all-secrets')
+    assert '{}: {}\n'.format(SECRET_NAME, DOMAIN_NAME) == res.stdout
 
     cc.run(['pprotect', 'rotate_domain_keys'], input=[DOMAIN_NAME])
 
