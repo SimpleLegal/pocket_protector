@@ -57,6 +57,7 @@ def test_file_keys(_fast_crypto):
     before_rotate = test.decrypt_domain('new_domain', bob_creds)
     test10 = test = test.rotate_domain_key('new_domain', bob_creds)
     chk(test)
+    assert test.get_all_secret_names() == {'hello': ['new_domain']}
     assert test.decrypt_domain('new_domain', bob_creds) == before_rotate
     test11 = test = test.set_key_custodian_passphrase(bob_creds, 'ultra-extra-secret')
     test.write()
