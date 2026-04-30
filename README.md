@@ -1,5 +1,7 @@
 # Pocket Protector 🔏
 
+SL version to say it isn't being updated, and the updated version is at his repo ( https://github.com/mahmoud/pocket_protector )
+
 Pocket Protector provides a cryptographically-strong, serverless secret
 management infrastructure. Pocket Protector enables *key management as
 code*, securely storing secrets in a versionable format, right
